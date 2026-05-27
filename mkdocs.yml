@@ -32,6 +32,6 @@ nav:
   - API Reference: api-reference.md
   - Runbook: runbook.md
   - Roadmap: roadmap.md
+  - Daily Progress: daily-progress.md
 extra_css:
   - stylesheets/extra.css
-
