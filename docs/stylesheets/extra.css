@@ -1,0 +1,43 @@
+.md-typeset .hero-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.8rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.md-typeset .hero-card {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.4rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, rgba(63, 81, 181, 0.10), rgba(0, 150, 136, 0.10));
+}
+
+.md-typeset .status-pill {
+  border-radius: 999px;
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  padding: 0.1rem 0.45rem;
+}
+
+.md-typeset .status-accepted {
+  background: rgba(0, 150, 136, 0.16);
+  color: #00695c;
+}
+
+.md-typeset .status-review {
+  background: rgba(251, 192, 45, 0.20);
+  color: #8a6200;
+}
+
+.md-typeset .status-rejected {
+  background: rgba(198, 40, 40, 0.14);
+  color: #9f1b1b;
+}
+
+.md-typeset table:not([class]) {
+  display: table;
+  width: 100%;
+}
+

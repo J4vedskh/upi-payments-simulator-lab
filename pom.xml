@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>3.5.11</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>com.javed.upi</groupId>
+  <artifactId>upi-payments-simulator-lab</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>UPI Payments Simulator Lab</name>
+  <description>Portfolio-grade UPI-style payments simulator with fraud rules, Kafka event flow, and live architecture docs.</description>
+
+  <modules>
+    <module>shared-events</module>
+    <module>fraud-engine</module>
+    <module>payment-service</module>
+    <module>transaction-ledger</module>
+  </modules>
+
+  <properties>
+    <java.version>17</java.version>
+    <maven.compiler.release>${java.version}</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+</project>
+

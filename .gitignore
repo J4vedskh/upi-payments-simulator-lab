@@ -1,0 +1,13 @@
+target/
+*.class
+*.log
+.env
+.idea/
+.vscode/
+.settings/
+.project
+.classpath
+site/
+.mkdocs_cache/
+.mkdocs_deps/
+.tools/

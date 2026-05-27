@@ -1,0 +1,153 @@
+openapi: 3.0.3
+info:
+  title: UPI Payments Simulator API
+  version: 0.1.0
+  description: Payment command and ledger APIs for the UPI Payments Simulator Lab.
+servers:
+  - url: http://localhost:8081
+    description: Payment Service
+  - url: http://localhost:8082
+    description: Transaction Ledger
+paths:
+  /api/payments:
+    post:
+      summary: Submit a UPI-style payment command
+      operationId: submitPayment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentRequest"
+      responses:
+        "202":
+          description: Payment decision accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+  /api/payments/{paymentId}:
+    get:
+      summary: Fetch a payment decision
+      operationId: getPayment
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      responses:
+        "200":
+          description: Payment decision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentResponse"
+        "404":
+          description: Payment was not found
+  /api/ledger:
+    get:
+      summary: List ledger entries
+      operationId: listLedgerEntries
+      responses:
+        "200":
+          description: Ledger entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LedgerEntry"
+  /api/ledger/{paymentId}:
+    get:
+      summary: Fetch one ledger entry
+      operationId: getLedgerEntry
+      parameters:
+        - $ref: "#/components/parameters/PaymentId"
+      responses:
+        "200":
+          description: Ledger entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerEntry"
+        "404":
+          description: Ledger entry was not found
+components:
+  parameters:
+    PaymentId:
+      name: paymentId
+      in: path
+      required: true
+      schema:
+        type: string
+        example: pay_7b873df0-3928-4d55-b015-bef1bd8cb1bd
+  schemas:
+    PaymentRequest:
+      type: object
+      required:
+        - payerVpa
+        - payeeVpa
+        - amount
+        - currency
+        - channel
+      properties:
+        payerVpa:
+          type: string
+          example: alice@upi
+        payeeVpa:
+          type: string
+          example: merchant@upi
+        amount:
+          type: number
+          format: double
+          minimum: 0.01
+          example: 249.50
+        currency:
+          type: string
+          example: INR
+        channel:
+          type: string
+          example: MOBILE
+    PaymentResponse:
+      allOf:
+        - $ref: "#/components/schemas/PaymentRequest"
+        - type: object
+          required:
+            - paymentId
+            - status
+            - decisionCode
+            - decisionMessage
+            - decidedAt
+          properties:
+            paymentId:
+              type: string
+            status:
+              type: string
+              enum: [ACCEPTED, REVIEW, REJECTED]
+            decisionCode:
+              type: string
+            decisionMessage:
+              type: string
+            decidedAt:
+              type: string
+              format: date-time
+    LedgerEntry:
+      type: object
+      properties:
+        paymentId:
+          type: string
+        payerVpa:
+          type: string
+        payeeVpa:
+          type: string
+        amount:
+          type: number
+          format: double
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [ACCEPTED, REVIEW, REJECTED]
+        decisionCode:
+          type: string
+        recordedAt:
+          type: string
+          format: date-time
+
