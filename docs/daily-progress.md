@@ -33,3 +33,8 @@ Every run should report:
 - result of each check
 - any skipped check with a clear reason
 
+## Progress Log
+
+| Date | Improvement | Verification |
+| --- | --- | --- |
+| 2026-05-29 | Added structured payment API error responses, controller tests, and error response docs. | `mvn -T 1C test` passed locally |

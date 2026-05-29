@@ -52,3 +52,22 @@ GET /api/ledger/{paymentId}
 
 The ledger can also ingest a payment event through `POST /internal/events/payments` for local demos without Kafka.
 
+## Error Response Shape
+
+Validation and lookup failures return a consistent JSON shape:
+
+```json
+{
+  "timestamp": "2026-05-29T10:30:00Z",
+  "status": 400,
+  "error": "VALIDATION_FAILED",
+  "message": "Request validation failed.",
+  "path": "/api/payments",
+  "validationErrors": {
+    "amount": "must be greater than or equal to 0.01",
+    "payerVpa": "must not be blank"
+  }
+}
+```
+
+This makes client behavior predictable and keeps API failures easy to demonstrate in tests and docs.
