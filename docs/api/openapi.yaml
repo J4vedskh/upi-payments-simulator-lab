@@ -26,6 +26,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PaymentResponse"
+        "400":
+          description: Request validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /api/payments/{paymentId}:
     get:
       summary: Fetch a payment decision
@@ -41,6 +47,10 @@ paths:
                 $ref: "#/components/schemas/PaymentResponse"
         "404":
           description: Payment was not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /api/ledger:
     get:
       summary: List ledger entries
@@ -69,6 +79,10 @@ paths:
                 $ref: "#/components/schemas/LedgerEntry"
         "404":
           description: Ledger entry was not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   parameters:
     PaymentId:
@@ -150,4 +164,26 @@ components:
         recordedAt:
           type: string
           format: date-time
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          example: 400
+        error:
+          type: string
+          example: VALIDATION_FAILED
+        message:
+          type: string
+          example: Request validation failed.
+        path:
+          type: string
+          example: /api/payments
+        validationErrors:
+          type: object
+          additionalProperties:
+            type: string
 
