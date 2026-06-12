@@ -4,6 +4,8 @@ UPI Payments Simulator Lab is a portfolio-grade Java project that models a UPI-s
 
 Live docs: https://j4vedskh.github.io/upi-payments-simulator-lab/
 
+Project deep dive: [PROJECT_EXPLANATION.md](PROJECT_EXPLANATION.md)
+
 ## What It Shows
 
 | Area | Implementation |
