@@ -11,6 +11,7 @@ Project deep dive: [PROJECT_EXPLANATION.md](PROJECT_EXPLANATION.md)
 | Area | Implementation |
 | --- | --- |
 | Backend | Java 17, Spring Boot REST APIs, validation, Actuator |
+| Security | Default permit-all behavior plus an opt-in JWT resource-server profile for payment writes |
 | Eventing | Kafka profile for payment events, local in-memory publisher for tests |
 | Fraud logic | Rule-based approval, review, and rejection decisions |
 | Ledger | Transaction ledger service that records payment events |
@@ -46,6 +47,32 @@ curl -X POST http://localhost:8081/api/payments \
   -H "Content-Type: application/json" \
   -d "{\"payerVpa\":\"alice@upi\",\"payeeVpa\":\"merchant@upi\",\"amount\":249.50,\"currency\":\"INR\",\"channel\":\"MOBILE\"}"
 ```
+
+### Opt-in secure profile
+
+The default profile remains permit-all for local demos and existing tests. To protect
+`POST /api/payments`, activate the `secure` profile and provide a Base64-encoded key
+that decodes to at least 32 bytes:
+
+```powershell
+$jwtKeyBytes = [byte[]]::new(32)
+[System.Security.Cryptography.RandomNumberGenerator]::Fill($jwtKeyBytes)
+$env:PAYMENT_JWT_SECRET = [Convert]::ToBase64String($jwtKeyBytes)
+mvn -pl payment-service spring-boot:run "-Dspring-boot.run.profiles=secure"
+```
+
+Secure mode accepts HS256 bearer tokens whose `scope` claim contains
+`payment.write`. Payment lookup and `/actuator/health` remain public:
+
+```bash
+curl -X POST http://localhost:8081/api/payments \
+  -H "Authorization: Bearer <signed-jwt>" \
+  -H "Content-Type: application/json" \
+  -d "{\"payerVpa\":\"alice@upi\",\"payeeVpa\":\"merchant@upi\",\"amount\":249.50,\"currency\":\"INR\",\"channel\":\"MOBILE\"}"
+```
+
+The repository contains no JWT signing key. `PAYMENT_JWT_SECRET` must come from the
+runtime environment and should be stored in a secret manager outside local demos.
 
 Run infrastructure for the Kafka profile:
 

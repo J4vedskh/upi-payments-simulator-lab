@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.javed.upi.events.PaymentStatus;
+import com.javed.upi.payment.security.PaymentSecurityConfiguration;
 import com.javed.upi.payment.service.PaymentService;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -18,12 +19,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 
 @WebMvcTest(PaymentController.class)
+@Import(PaymentSecurityConfiguration.class)
 class PaymentControllerTest {
   @Autowired
   private MockMvc mockMvc;

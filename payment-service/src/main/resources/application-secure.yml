@@ -1,0 +1,4 @@
+app:
+  security:
+    jwt:
+      secret: ${PAYMENT_JWT_SECRET}
