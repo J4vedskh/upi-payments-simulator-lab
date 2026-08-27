@@ -29,7 +29,7 @@ Records payment decisions through a local endpoint or Kafka consumer profile.
 | Transaction ledger service | <span class="status-pill status-accepted">Ready</span> |
 | Kafka runtime profile | <span class="status-pill status-review">Starter</span> |
 | Durable PostgreSQL persistence | <span class="status-pill status-review">Roadmap</span> |
-| JWT/API gateway security | <span class="status-pill status-review">Roadmap</span> |
+| JWT-secured payment submission profile | <span class="status-pill status-accepted">Ready (opt-in)</span> |
 
 ## Why This Project Matters
 

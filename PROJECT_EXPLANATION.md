@@ -188,8 +188,9 @@ sequenceDiagram
 | --- | --- |
 | Default | Uses in-memory publishing so tests and demos do not require Kafka |
 | `kafka` | Publishes and consumes `PaymentEvent` messages through Kafka |
+| `secure` | Requires an HS256 JWT with `payment.write` for `POST /api/payments`; payment reads and health/info remain public |
 
-The default profile makes the project easy to run locally. The Kafka profile shows how the system can move toward a more production-like event-driven architecture.
+The default profile makes the project easy to run locally. The Kafka profile shows how the system can move toward a more production-like event-driven architecture. The secure profile is deliberately opt-in and reads its signing key from `PAYMENT_JWT_SECRET`, so no credential is committed.
 
 ## API Reference
 
@@ -288,6 +289,7 @@ Current test coverage includes:
 | Fraud rules | Approval, review, and rejection decisions |
 | Payment service | Payment submission behavior and event publishing |
 | Payment API | Successful submission, validation errors, and missing payment lookup |
+| Payment security | Missing token, insufficient scope, accepted `payment.write` scope, and public payment lookup |
 | Ledger service | Recording and retrieving ledger entries |
 | Ledger API | Structured not-found response |
 
@@ -298,6 +300,7 @@ Representative test files:
 | [`fraud-engine/src/test/java/com/javed/upi/fraud/FraudEngineTest.java`](fraud-engine/src/test/java/com/javed/upi/fraud/FraudEngineTest.java) | Fraud engine behavior tests |
 | [`payment-service/src/test/java/com/javed/upi/payment/service/PaymentServiceTest.java`](payment-service/src/test/java/com/javed/upi/payment/service/PaymentServiceTest.java) | Payment service tests |
 | [`payment-service/src/test/java/com/javed/upi/payment/api/PaymentControllerTest.java`](payment-service/src/test/java/com/javed/upi/payment/api/PaymentControllerTest.java) | Payment API controller tests |
+| [`payment-service/src/test/java/com/javed/upi/payment/api/PaymentSecurityTest.java`](payment-service/src/test/java/com/javed/upi/payment/api/PaymentSecurityTest.java) | Secure-profile authorization boundary tests; default compatibility remains covered by `PaymentControllerTest` |
 | [`transaction-ledger/src/test/java/com/javed/upi/ledger/service/TransactionLedgerServiceTest.java`](transaction-ledger/src/test/java/com/javed/upi/ledger/service/TransactionLedgerServiceTest.java) | Ledger service tests |
 | [`transaction-ledger/src/test/java/com/javed/upi/ledger/api/LedgerControllerTest.java`](transaction-ledger/src/test/java/com/javed/upi/ledger/api/LedgerControllerTest.java) | Ledger API controller tests |
 
@@ -321,6 +324,7 @@ It currently includes:
 | APIs | REST APIs for payments and ledger |
 | Validation | Jakarta validation on payment requests |
 | Error contracts | Structured API error responses |
+| Security | Opt-in Spring Security resource-server profile with `payment.write` scope authorization |
 | Eventing | Local publisher by default, Kafka profile for event publishing/consuming |
 | Infrastructure | Docker Compose for Kafka, PostgreSQL, and services |
 | Deployment starters | Kubernetes manifests |
@@ -415,7 +419,7 @@ mkdocs build --strict
 | GitHub Actions CI | Ready |
 | GitHub Pages documentation | Ready |
 | Durable PostgreSQL persistence | Roadmap |
-| JWT/API gateway security | Roadmap |
+| JWT-secured payment submission profile | Ready (opt-in) |
 | Observability with traces and metrics | Roadmap |
 
 ## Current Progress
@@ -428,9 +432,8 @@ Current daily improvement log:
 
 | Date | Improvement | Verification |
 | --- | --- | --- |
+| 2026-08-27 | Added an opt-in JWT-secured payment submission profile with scoped write authorization. | `mvn -T 1C test` passed locally: 16 tests, 0 failures/errors/skips |
 | 2026-05-29 | Added structured payment API error responses, controller tests, and error response docs. | `mvn -T 1C test` passed locally |
-
-This improvement was merged into `main`, so the default GitHub branch now shows the progress.
 
 ## Daily Automation Plan
 
@@ -469,7 +472,6 @@ Near-term planned improvements:
 | --- | --- | --- |
 | P1 | Add PostgreSQL persistence for payments and ledger entries | Makes the simulator closer to real payment platforms |
 | P1 | Add Testcontainers for Kafka integration tests | Verifies the event path beyond unit tests |
-| P1 | Add JWT-secured payment submission profile | Demonstrates API security for fintech workflows |
 | P2 | Add OpenTelemetry tracing and Prometheus metrics | Improves observability story |
 | P2 | Add richer fraud rules with configurable thresholds | Makes the fraud engine more realistic |
 | P2 | Add GitHub Pages API rendering | Makes API docs easier to browse |
@@ -552,6 +554,6 @@ docker compose up -d kafka
 
 ## Summary
 
-`upi-payments-simulator-lab` is a mini UPI-style payment backend that currently supports payment submission, fraud decisions, event publishing, ledger recording, structured API errors, tests, CI, Docker/Kafka starters, OpenAPI docs, Mermaid architecture diagrams, and GitHub Pages documentation.
+`upi-payments-simulator-lab` is a mini UPI-style payment backend that currently supports payment submission, opt-in scoped JWT authorization, fraud decisions, event publishing, ledger recording, structured API errors, tests, CI, Docker/Kafka starters, OpenAPI docs, Mermaid architecture diagrams, and GitHub Pages documentation.
 
-Its value is that it tells a clear portfolio story: practical backend engineering for a fintech-style domain, with room to grow into persistence, security, observability, integration testing, and deployment hardening.
+Its value is that it tells a clear portfolio story: practical backend engineering for a fintech-style domain, with room to grow into persistence, managed identity integration, observability, integration testing, and deployment hardening.

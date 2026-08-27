@@ -2,11 +2,28 @@
 
 The versioned OpenAPI contract lives at [`docs/api/openapi.yaml`](api/openapi.yaml).
 
+## Authentication Profiles
+
+The default profile is permit-all so existing local demos and tests work without a
+token. With the `secure` profile active, `POST /api/payments` requires an HS256 bearer
+JWT whose `scope` claim contains `payment.write`.
+
+| Request | Default profile | `secure` profile |
+| --- | --- | --- |
+| `POST /api/payments` | Public | JWT with `payment.write` |
+| `GET /api/payments/{paymentId}` | Public | Public |
+| `GET /actuator/health` and `GET /actuator/info` | Public | Public |
+
+Secure payment submission returns `401` when the bearer token is missing or invalid
+and `403` when the token does not provide `payment.write`. The signing key is supplied
+at runtime through `PAYMENT_JWT_SECRET`; no signing credential is stored in Git.
+
 ## Submit Payment
 
 ```http
 POST /api/payments
 Content-Type: application/json
+Authorization: Bearer <signed-jwt>  # required only with the secure profile
 
 {
   "payerVpa": "alice@upi",

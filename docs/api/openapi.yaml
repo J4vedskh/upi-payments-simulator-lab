@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: UPI Payments Simulator API
   version: 0.1.0
-  description: Payment command and ledger APIs for the UPI Payments Simulator Lab.
+  description: Payment command and ledger APIs for the UPI Payments Simulator Lab. The bearer requirement on payment submission applies when the opt-in secure profile is active.
 servers:
   - url: http://localhost:8081
     description: Payment Service
@@ -13,6 +13,8 @@ paths:
     post:
       summary: Submit a UPI-style payment command
       operationId: submitPayment
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -32,6 +34,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Bearer token is missing or invalid in the secure profile
+        "403":
+          description: Bearer token does not grant the payment.write scope
   /api/payments/{paymentId}:
     get:
       summary: Fetch a payment decision
@@ -84,6 +90,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: The secure profile accepts HS256 JWTs with payment.write in the scope claim.
   parameters:
     PaymentId:
       name: paymentId
