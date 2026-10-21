@@ -15,6 +15,25 @@ mvn -pl payment-service spring-boot:run
 mvn -pl transaction-ledger spring-boot:run
 ```
 
+## Configure Fraud Thresholds
+
+The payment service uses these defaults:
+
+| Setting | Environment variable | Default | Boundary behavior |
+| --- | --- | ---: | --- |
+| Review amount | `UPI_FRAUD_REVIEW_THRESHOLD` | `50000.00` | Amounts greater than or equal to this value enter review. |
+| Block amount | `UPI_FRAUD_BLOCK_THRESHOLD` | `200000.00` | Amounts greater than or equal to this value are rejected. |
+
+Both values must be positive, and review must remain lower than block. The
+service fails startup if that policy is invalid. Set the values before starting
+the payment service, for example:
+
+```powershell
+$env:UPI_FRAUD_REVIEW_THRESHOLD = "25000.00"
+$env:UPI_FRAUD_BLOCK_THRESHOLD = "100000.00"
+mvn -pl payment-service spring-boot:run
+```
+
 ## Run With Kafka Profile
 
 Start Kafka:

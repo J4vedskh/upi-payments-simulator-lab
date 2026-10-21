@@ -11,7 +11,8 @@ Accepts payer/payee VPAs, amount, currency, and channel, then returns a traceabl
 <div class="hero-card" markdown>
 **Fraud Rules Engine**
 
-Blocks self-transfers and restricted payees, reviews high-value and non-INR payments.
+Blocks self-transfers and restricted payees, and applies validated configurable
+amount thresholds alongside the non-INR review rule.
 </div>
 <div class="hero-card" markdown>
 **Event-Driven Ledger**

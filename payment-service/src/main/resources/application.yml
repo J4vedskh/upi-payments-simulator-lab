@@ -16,6 +16,9 @@ management:
         enabled: true
 
 app:
+  fraud:
+    review-threshold: ${UPI_FRAUD_REVIEW_THRESHOLD:50000.00}
+    block-threshold: ${UPI_FRAUD_BLOCK_THRESHOLD:200000.00}
   kafka:
     topics:
       payment-events: payment-events

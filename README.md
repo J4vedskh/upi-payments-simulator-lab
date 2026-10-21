@@ -48,6 +48,23 @@ curl -X POST http://localhost:8081/api/payments \
   -d "{\"payerVpa\":\"alice@upi\",\"payeeVpa\":\"merchant@upi\",\"amount\":249.50,\"currency\":\"INR\",\"channel\":\"MOBILE\"}"
 ```
 
+### Configure fraud thresholds
+
+The amount review threshold defaults to `50000.00` and the hard block threshold
+defaults to `200000.00`. Amounts at or above the review threshold require
+review; amounts at or above the block threshold are rejected. Override both
+before starting the payment service:
+
+```powershell
+$env:UPI_FRAUD_REVIEW_THRESHOLD = "25000.00"
+$env:UPI_FRAUD_BLOCK_THRESHOLD = "100000.00"
+mvn -pl payment-service spring-boot:run
+```
+
+Both values must be positive, and the review threshold must be lower than the
+block threshold. Invalid settings stop application startup. Self-transfer,
+restricted-payee, and non-INR rules continue to apply independently.
+
 ### Opt-in secure profile
 
 The default profile remains permit-all for local demos and existing tests. To protect

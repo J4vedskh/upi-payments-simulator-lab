@@ -57,9 +57,14 @@ Example response:
 | `APPROVED` | `ACCEPTED` | Payment passed all configured rules |
 | `SELF_TRANSFER` | `REJECTED` | Payer and payee VPA are the same |
 | `RESTRICTED_PAYEE` | `REJECTED` | Payee matched a restricted pattern |
-| `LIMIT_EXCEEDED` | `REJECTED` | Amount exceeded the hard limit |
+| `LIMIT_EXCEEDED` | `REJECTED` | Amount reached or exceeded the hard limit |
 | `HIGH_VALUE_PAYMENT` | `REVIEW` | Amount requires manual review |
 | `NON_INR_PAYMENT` | `REVIEW` | Currency requires review |
+
+The review and block boundaries default to `50000.00` and `200000.00`.
+Configure them with `UPI_FRAUD_REVIEW_THRESHOLD` and
+`UPI_FRAUD_BLOCK_THRESHOLD`. Both must be positive, review must be lower than
+block, and each boundary is inclusive.
 
 ## Ledger Lookup
 
