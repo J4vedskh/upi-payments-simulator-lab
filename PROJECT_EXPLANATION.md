@@ -100,6 +100,12 @@ Current fraud/risk behavior:
 | Currency is not `INR` | Review |
 | No findings are triggered | Approve |
 
+The amount rules default to a `50000.00` review threshold and a `200000.00`
+block threshold. `UPI_FRAUD_REVIEW_THRESHOLD` and
+`UPI_FRAUD_BLOCK_THRESHOLD` can override them at startup. Both values must be
+positive and review must be lower than block; invalid settings fail startup.
+The boundary comparison is inclusive.
+
 Current decision codes:
 
 | Decision Code | Payment Status | Meaning |
@@ -107,7 +113,7 @@ Current decision codes:
 | `APPROVED` | `ACCEPTED` | Payment passed all configured fraud checks |
 | `SELF_TRANSFER` | `REJECTED` | Payer and payee VPA are the same |
 | `RESTRICTED_PAYEE` | `REJECTED` | Payee matched a restricted pattern |
-| `LIMIT_EXCEEDED` | `REJECTED` | Amount exceeded the configured hard limit |
+| `LIMIT_EXCEEDED` | `REJECTED` | Amount reached or exceeded the configured hard limit |
 | `HIGH_VALUE_PAYMENT` | `REVIEW` | Amount requires manual review |
 | `NON_INR_PAYMENT` | `REVIEW` | Currency requires review |
 
@@ -298,6 +304,7 @@ Representative test files:
 | File | Purpose |
 | --- | --- |
 | [`fraud-engine/src/test/java/com/javed/upi/fraud/FraudEngineTest.java`](fraud-engine/src/test/java/com/javed/upi/fraud/FraudEngineTest.java) | Fraud engine behavior tests |
+| [`payment-service/src/test/java/com/javed/upi/payment/config/FraudConfigurationTest.java`](payment-service/src/test/java/com/javed/upi/payment/config/FraudConfigurationTest.java) | Default, custom, and invalid fraud-threshold configuration tests |
 | [`payment-service/src/test/java/com/javed/upi/payment/service/PaymentServiceTest.java`](payment-service/src/test/java/com/javed/upi/payment/service/PaymentServiceTest.java) | Payment service tests |
 | [`payment-service/src/test/java/com/javed/upi/payment/api/PaymentControllerTest.java`](payment-service/src/test/java/com/javed/upi/payment/api/PaymentControllerTest.java) | Payment API controller tests |
 | [`payment-service/src/test/java/com/javed/upi/payment/api/PaymentSecurityTest.java`](payment-service/src/test/java/com/javed/upi/payment/api/PaymentSecurityTest.java) | Secure-profile authorization boundary tests; default compatibility remains covered by `PaymentControllerTest` |
@@ -473,7 +480,6 @@ Near-term planned improvements:
 | P1 | Add PostgreSQL persistence for payments and ledger entries | Makes the simulator closer to real payment platforms |
 | P1 | Add Testcontainers for Kafka integration tests | Verifies the event path beyond unit tests |
 | P2 | Add OpenTelemetry tracing and Prometheus metrics | Improves observability story |
-| P2 | Add richer fraud rules with configurable thresholds | Makes the fraud engine more realistic |
 | P2 | Add GitHub Pages API rendering | Makes API docs easier to browse |
 | P3 | Add Helm chart and Minikube walkthrough | Strengthens platform engineering presentation |
 

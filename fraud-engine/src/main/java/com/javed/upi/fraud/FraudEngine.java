@@ -5,11 +5,12 @@ import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 
 public final class FraudEngine {
-  private static final BigDecimal REVIEW_LIMIT = new BigDecimal("50000.00");
-  private static final BigDecimal BLOCK_LIMIT = new BigDecimal("200000.00");
+  public static final BigDecimal DEFAULT_REVIEW_THRESHOLD = new BigDecimal("50000.00");
+  public static final BigDecimal DEFAULT_BLOCK_THRESHOLD = new BigDecimal("200000.00");
 
   private final List<FraudRule> rules;
 
@@ -18,10 +19,33 @@ public final class FraudEngine {
   }
 
   public static FraudEngine defaultEngine() {
+    return withAmountThresholds(DEFAULT_REVIEW_THRESHOLD, DEFAULT_BLOCK_THRESHOLD);
+  }
+
+  public static FraudEngine withAmountThresholds(
+      BigDecimal reviewThreshold,
+      BigDecimal blockThreshold) {
+    BigDecimal validatedReviewThreshold = Objects.requireNonNull(
+        reviewThreshold,
+        "reviewThreshold is required");
+    BigDecimal validatedBlockThreshold = Objects.requireNonNull(
+        blockThreshold,
+        "blockThreshold is required");
+    if (validatedReviewThreshold.signum() <= 0 || validatedBlockThreshold.signum() <= 0) {
+      throw new IllegalArgumentException("Fraud amount thresholds must be positive.");
+    }
+    if (validatedReviewThreshold.compareTo(validatedBlockThreshold) >= 0) {
+      throw new IllegalArgumentException(
+          "Fraud review threshold must be less than the block threshold.");
+    }
+
     return new FraudEngine(List.of(
         FraudEngine::blockSelfTransfer,
         FraudEngine::blockRestrictedVpa,
-        FraudEngine::reviewLargePayment,
+        command -> reviewLargePayment(
+            command,
+            validatedReviewThreshold,
+            validatedBlockThreshold),
         FraudEngine::reviewNonInrPayment));
   }
 
@@ -68,14 +92,17 @@ public final class FraudEngine {
     return Optional.empty();
   }
 
-  private static Optional<FraudFinding> reviewLargePayment(PaymentCommand command) {
-    if (command.amount().compareTo(BLOCK_LIMIT) >= 0) {
+  private static Optional<FraudFinding> reviewLargePayment(
+      PaymentCommand command,
+      BigDecimal reviewThreshold,
+      BigDecimal blockThreshold) {
+    if (command.amount().compareTo(blockThreshold) >= 0) {
       return Optional.of(new FraudFinding(
           PaymentRisk.BLOCKED,
           "LIMIT_EXCEEDED",
-          "Payment amount exceeds the configured hard limit."));
+          "Payment amount reached or exceeded the configured hard limit."));
     }
-    if (command.amount().compareTo(REVIEW_LIMIT) >= 0) {
+    if (command.amount().compareTo(reviewThreshold) >= 0) {
       return Optional.of(new FraudFinding(
           PaymentRisk.REVIEW,
           "HIGH_VALUE_PAYMENT",
