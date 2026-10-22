@@ -76,8 +76,9 @@ When a payment is submitted, `PaymentService`:
 5. Converts the fraud decision into a payment status.
 6. Creates a `PaymentEvent`.
 7. Stores the event in memory.
-8. Publishes the event.
-9. Returns a `PaymentResponse` to the caller.
+8. Increments the bounded decision counter for the event status.
+9. Publishes the event.
+10. Returns a `PaymentResponse` to the caller.
 
 ## Fraud Engine
 
@@ -136,6 +137,23 @@ Main ledger endpoints:
 | `GET /api/ledger/{paymentId}` | Fetch one ledger entry by payment ID |
 
 This gives the project an audit-style component: after a payment decision is made, the system can show a ledger record for that payment.
+
+## Prometheus Business Metrics
+
+Both services expose `GET /actuator/prometheus`. The payment service increments
+`upi_payment_decisions_total` after it evaluates and stores a payment decision.
+The ledger increments `upi_ledger_records_total` after each record operation.
+
+Both counters use exactly one custom label, `status`, with the fixed values
+`accepted`, `review`, and `rejected`. They do not use payment IDs, VPAs, amounts,
+currencies, channels, or decision codes as labels. This keeps the number of time
+series bounded and avoids placing payment details in labels.
+
+The ledger metric counts record operations. If an event with an existing payment
+ID is replayed, the in-memory entry is overwritten and the counter increases again;
+it is not a unique-payment gauge. Each service's counters reset when that service
+restarts; an external Prometheus server can retain historical samples across
+restarts.
 
 ## Shared Event Contracts
 
@@ -296,6 +314,7 @@ Current test coverage includes:
 | Payment service | Payment submission behavior and event publishing |
 | Payment API | Successful submission, validation errors, and missing payment lookup |
 | Payment security | Missing token, insufficient scope, accepted `payment.write` scope, and public payment lookup |
+| Prometheus metrics | Bounded labels, exported sample lines, and exclusion of payment identifiers from exposition |
 | Ledger service | Recording and retrieving ledger entries |
 | Ledger API | Structured not-found response |
 
@@ -308,8 +327,10 @@ Representative test files:
 | [`payment-service/src/test/java/com/javed/upi/payment/service/PaymentServiceTest.java`](payment-service/src/test/java/com/javed/upi/payment/service/PaymentServiceTest.java) | Payment service tests |
 | [`payment-service/src/test/java/com/javed/upi/payment/api/PaymentControllerTest.java`](payment-service/src/test/java/com/javed/upi/payment/api/PaymentControllerTest.java) | Payment API controller tests |
 | [`payment-service/src/test/java/com/javed/upi/payment/api/PaymentSecurityTest.java`](payment-service/src/test/java/com/javed/upi/payment/api/PaymentSecurityTest.java) | Secure-profile authorization boundary tests; default compatibility remains covered by `PaymentControllerTest` |
+| [`payment-service/src/test/java/com/javed/upi/payment/observability/PrometheusEndpointIntegrationTest.java`](payment-service/src/test/java/com/javed/upi/payment/observability/PrometheusEndpointIntegrationTest.java) | Payment decision Prometheus exposition and privacy-boundary test |
 | [`transaction-ledger/src/test/java/com/javed/upi/ledger/service/TransactionLedgerServiceTest.java`](transaction-ledger/src/test/java/com/javed/upi/ledger/service/TransactionLedgerServiceTest.java) | Ledger service tests |
 | [`transaction-ledger/src/test/java/com/javed/upi/ledger/api/LedgerControllerTest.java`](transaction-ledger/src/test/java/com/javed/upi/ledger/api/LedgerControllerTest.java) | Ledger API controller tests |
+| [`transaction-ledger/src/test/java/com/javed/upi/ledger/observability/PrometheusEndpointIntegrationTest.java`](transaction-ledger/src/test/java/com/javed/upi/ledger/observability/PrometheusEndpointIntegrationTest.java) | Ledger record Prometheus exposition and privacy-boundary test |
 
 Run all tests:
 
@@ -427,7 +448,8 @@ mkdocs build --strict
 | GitHub Pages documentation | Ready |
 | Durable PostgreSQL persistence | Roadmap |
 | JWT-secured payment submission profile | Ready (opt-in) |
-| Observability with traces and metrics | Roadmap |
+| Bounded Prometheus business metrics | Ready |
+| OpenTelemetry tracing | Roadmap |
 
 ## Current Progress
 
@@ -439,6 +461,7 @@ Current daily improvement log:
 
 | Date | Improvement | Verification |
 | --- | --- | --- |
+| 2026-10-22 | Added bounded Prometheus payment-decision and ledger-record counters with exposition tests. | `mvn -o test` passed: 30 tests; `mkdocs build --strict` passed |
 | 2026-08-27 | Added an opt-in JWT-secured payment submission profile with scoped write authorization. | `mvn -T 1C test` passed locally: 16 tests, 0 failures/errors/skips |
 | 2026-05-29 | Added structured payment API error responses, controller tests, and error response docs. | `mvn -T 1C test` passed locally |
 
@@ -479,7 +502,7 @@ Near-term planned improvements:
 | --- | --- | --- |
 | P1 | Add PostgreSQL persistence for payments and ledger entries | Makes the simulator closer to real payment platforms |
 | P1 | Add Testcontainers for Kafka integration tests | Verifies the event path beyond unit tests |
-| P2 | Add OpenTelemetry tracing and Prometheus metrics | Improves observability story |
+| P2 | Add OpenTelemetry tracing | Adds cross-service request and event correlation |
 | P2 | Add GitHub Pages API rendering | Makes API docs easier to browse |
 | P3 | Add Helm chart and Minikube walkthrough | Strengthens platform engineering presentation |
 

@@ -8,11 +8,13 @@ import com.javed.upi.fraud.FraudEngine;
 import com.javed.upi.fraud.PaymentRisk;
 import com.javed.upi.payment.api.PaymentRequest;
 import com.javed.upi.payment.api.PaymentResponse;
+import com.javed.upi.payment.observability.PaymentDecisionMetrics;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -21,16 +23,26 @@ import org.springframework.web.server.ResponseStatusException;
 public class PaymentService {
   private final FraudEngine fraudEngine;
   private final PaymentEventPublisher eventPublisher;
+  private final PaymentDecisionMetrics decisionMetrics;
   private final Clock clock;
   private final Map<String, PaymentEvent> payments = new ConcurrentHashMap<>();
 
-  public PaymentService(FraudEngine fraudEngine, PaymentEventPublisher eventPublisher) {
-    this(fraudEngine, eventPublisher, Clock.systemUTC());
+  @Autowired
+  public PaymentService(
+      FraudEngine fraudEngine,
+      PaymentEventPublisher eventPublisher,
+      PaymentDecisionMetrics decisionMetrics) {
+    this(fraudEngine, eventPublisher, decisionMetrics, Clock.systemUTC());
   }
 
-  PaymentService(FraudEngine fraudEngine, PaymentEventPublisher eventPublisher, Clock clock) {
+  PaymentService(
+      FraudEngine fraudEngine,
+      PaymentEventPublisher eventPublisher,
+      PaymentDecisionMetrics decisionMetrics,
+      Clock clock) {
     this.fraudEngine = fraudEngine;
     this.eventPublisher = eventPublisher;
+    this.decisionMetrics = decisionMetrics;
     this.clock = clock;
   }
 
@@ -58,6 +70,7 @@ public class PaymentService {
         now);
 
     payments.put(event.paymentId(), event);
+    decisionMetrics.record(event.status());
     eventPublisher.publish(event);
     return PaymentResponse.from(event);
   }

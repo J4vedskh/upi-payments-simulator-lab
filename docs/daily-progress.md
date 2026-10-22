@@ -37,6 +37,7 @@ Every run should report:
 
 | Date | Improvement | Verification |
 | --- | --- | --- |
+| 2026-10-22 | Added privacy-safe Prometheus counters for payment decisions and ledger record operations. | `mvn -o test` passed: 30 tests; `mkdocs build --strict` passed |
 | 2026-10-21 | Added validated configurable fraud review/block amount thresholds with preserved defaults and exact boundary coverage. | `mvn -o test` passed: 24 tests; `mkdocs build --strict` passed |
 | 2026-08-27 | Added an opt-in JWT-secured payment submission profile with `payment.write` authorization and public read/health surfaces. | `mvn -T 1C test` passed locally: 16 tests, 0 failures/errors/skips |
 | 2026-06-12 | Published a comprehensive project deep-dive Markdown artifact and linked it from the README. | `mvn -T 1C test` and static docs check passed locally |
