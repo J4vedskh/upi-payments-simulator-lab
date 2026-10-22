@@ -15,6 +15,7 @@ Project deep dive: [PROJECT_EXPLANATION.md](PROJECT_EXPLANATION.md)
 | Eventing | Kafka profile for payment events, local in-memory publisher for tests |
 | Fraud logic | Rule-based approval, review, and rejection decisions |
 | Ledger | Transaction ledger service that records payment events |
+| Observability | Prometheus counters with bounded payment-status labels |
 | Platform | Dockerfiles, Docker Compose, Kubernetes starter manifests |
 | Delivery | GitHub Actions CI and GitHub Pages documentation |
 
@@ -64,6 +65,21 @@ mvn -pl payment-service spring-boot:run
 Both values must be positive, and the review threshold must be lower than the
 block threshold. Invalid settings stop application startup. Self-transfer,
 restricted-payee, and non-INR rules continue to apply independently.
+
+### Inspect business metrics
+
+Both services expose Prometheus metrics without requiring credentials, including
+when the payment service uses the `secure` profile:
+
+```bash
+curl http://localhost:8081/actuator/prometheus
+curl http://localhost:8082/actuator/prometheus
+```
+
+`upi_payment_decisions_total` counts payment decisions by `status`, and
+`upi_ledger_records_total` counts ledger record operations by `status`. The only
+custom label is the bounded `status` value: `accepted`, `review`, or `rejected`.
+Payment IDs, VPAs, amounts, and other request values are not used as labels.
 
 ### Opt-in secure profile
 

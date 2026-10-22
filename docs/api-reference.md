@@ -13,6 +13,7 @@ JWT whose `scope` claim contains `payment.write`.
 | `POST /api/payments` | Public | JWT with `payment.write` |
 | `GET /api/payments/{paymentId}` | Public | Public |
 | `GET /actuator/health` and `GET /actuator/info` | Public | Public |
+| `GET /actuator/prometheus` | Public | Public |
 
 Secure payment submission returns `401` when the bearer token is missing or invalid
 and `403` when the token does not provide `payment.write`. The signing key is supplied
@@ -93,3 +94,10 @@ Validation and lookup failures return a consistent JSON shape:
 ```
 
 This makes client behavior predictable and keeps API failures easy to demonstrate in tests and docs.
+
+## Prometheus Metrics
+
+The services expose operational metrics at `GET /actuator/prometheus`. The
+payment service publishes `upi_payment_decisions_total`, and the ledger publishes
+`upi_ledger_records_total`. Each counter uses only the bounded `status` label;
+request identifiers and payment details are excluded.

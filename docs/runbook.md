@@ -70,6 +70,28 @@ Clients must send a bearer JWT containing `payment.write` in its `scope` claim.
 Missing or invalid tokens return `401`; authenticated tokens without the scope return
 `403`. Use `secure,kafka` when both profiles are required.
 
+## Prometheus Metrics
+
+After starting the services, inspect their Prometheus endpoints:
+
+```bash
+curl http://localhost:8081/actuator/prometheus
+curl http://localhost:8082/actuator/prometheus
+```
+
+| Metric | Meaning |
+| --- | --- |
+| `upi_payment_decisions_total{status="..."}` | Payment decisions evaluated by the fraud engine |
+| `upi_ledger_records_total{status="..."}` | Ledger record operations, including replayed events that overwrite an existing in-memory entry |
+
+The only custom label is `status`, with the fixed values `accepted`, `review`,
+and `rejected`. Payment IDs, VPAs, amounts, currencies, channels, decision codes,
+and request identifiers are deliberately excluded from labels.
+
+Each service's counters reset when that service restarts. An external Prometheus
+server can retain historical samples across restarts. The ledger counter measures
+record operations, not the number of unique entries currently held in memory.
+
 ## Build Docs
 
 ```bash
@@ -82,6 +104,7 @@ mkdocs build --strict
 | Endpoint | Description |
 | --- | --- |
 | `GET /actuator/health` | Service health |
+| `GET /actuator/prometheus` | Prometheus metrics; public in the default and secure profiles |
 | `POST /api/payments` | Submit payment command; requires `payment.write` in secure mode |
 | `GET /api/payments/{paymentId}` | Inspect payment decision |
 | `GET /api/ledger` | List ledger entries |

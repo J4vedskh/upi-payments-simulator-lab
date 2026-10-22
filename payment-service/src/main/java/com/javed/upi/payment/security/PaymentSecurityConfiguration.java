@@ -40,6 +40,7 @@ public class PaymentSecurityConfiguration {
             .requestMatchers(HttpMethod.POST, "/api/payments").hasAuthority(PAYMENT_WRITE_AUTHORITY)
             .requestMatchers(HttpMethod.GET, "/api/payments/**").permitAll()
             .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
+            .requestMatchers("/actuator/prometheus").permitAll()
             .anyRequest().permitAll())
         .oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()))
         .build();
