@@ -1,7 +1,9 @@
 package com.javed.upi.ledger.api;
 
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -11,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -21,6 +24,20 @@ class LedgerControllerTest {
 
   @MockBean
   private TransactionLedgerService ledgerService;
+
+  @Test
+  void invalidPaymentEventsReturnBadRequestWithoutCallingTheLedger() throws Exception {
+    mockMvc.perform(post("/internal/events/payments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{}"))
+        .andExpect(status().isBadRequest());
+    mockMvc.perform(post("/internal/events/payments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"paymentId\":"))
+        .andExpect(status().isBadRequest());
+
+    verifyNoInteractions(ledgerService);
+  }
 
   @Test
   void missingLedgerEntryReturnsStructuredNotFound() throws Exception {
