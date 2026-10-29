@@ -13,7 +13,12 @@ paths:
     post:
       summary: Submit a UPI-style payment command
       operationId: submitPayment
+      description: The default profile accepts anonymous requests. The opt-in secure profile requires an HS256 bearer token with payment.write in the scope claim.
+      servers:
+        - url: http://localhost:8081
+          description: Payment Service
       security:
+        - {}
         - bearerAuth: []
       requestBody:
         required: true
@@ -42,6 +47,9 @@ paths:
     get:
       summary: Fetch a payment decision
       operationId: getPayment
+      servers:
+        - url: http://localhost:8081
+          description: Payment Service
       parameters:
         - $ref: "#/components/parameters/PaymentId"
       responses:
@@ -57,10 +65,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /internal/events/payments:
+    post:
+      summary: Record a payment event directly in the ledger
+      description: Internal local-demo intake that records the same event shape consumed from Kafka. This endpoint is hosted by the ledger service and does not use the payment-service secure profile.
+      operationId: recordPaymentEvent
+      servers:
+        - url: http://localhost:8082
+          description: Transaction Ledger
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentEvent"
+      responses:
+        "200":
+          description: Payment event recorded in the ledger
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LedgerEntry"
+        "400":
+          description: Payment event JSON is malformed or missing a required field
   /api/ledger:
     get:
       summary: List ledger entries
       operationId: listLedgerEntries
+      servers:
+        - url: http://localhost:8082
+          description: Transaction Ledger
       responses:
         "200":
           description: Ledger entries
@@ -74,6 +109,9 @@ paths:
     get:
       summary: Fetch one ledger entry
       operationId: getLedgerEntry
+      servers:
+        - url: http://localhost:8082
+          description: Transaction Ledger
       parameters:
         - $ref: "#/components/parameters/PaymentId"
       responses:
@@ -122,7 +160,6 @@ components:
           example: merchant@upi
         amount:
           type: number
-          format: double
           minimum: 0.01
           example: 249.50
         currency:
@@ -132,30 +169,17 @@ components:
           type: string
           example: MOBILE
     PaymentResponse:
-      allOf:
-        - $ref: "#/components/schemas/PaymentRequest"
-        - type: object
-          required:
-            - paymentId
-            - status
-            - decisionCode
-            - decisionMessage
-            - decidedAt
-          properties:
-            paymentId:
-              type: string
-            status:
-              type: string
-              enum: [ACCEPTED, REVIEW, REJECTED]
-            decisionCode:
-              type: string
-            decisionMessage:
-              type: string
-            decidedAt:
-              type: string
-              format: date-time
-    LedgerEntry:
       type: object
+      required:
+        - paymentId
+        - payerVpa
+        - payeeVpa
+        - amount
+        - currency
+        - status
+        - decisionCode
+        - decisionMessage
+        - decidedAt
       properties:
         paymentId:
           type: string
@@ -165,7 +189,80 @@ components:
           type: string
         amount:
           type: number
-          format: double
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [ACCEPTED, REVIEW, REJECTED]
+        decisionCode:
+          type: string
+        decisionMessage:
+          type: string
+        decidedAt:
+          type: string
+          format: date-time
+    PaymentEvent:
+      type: object
+      required:
+        - paymentId
+        - payerVpa
+        - payeeVpa
+        - amount
+        - currency
+        - status
+        - decisionCode
+        - decisionMessage
+        - decidedAt
+      properties:
+        paymentId:
+          type: string
+          example: pay_7b873df0-3928-4d55-b015-bef1bd8cb1bd
+        payerVpa:
+          type: string
+          example: alice@upi
+        payeeVpa:
+          type: string
+          example: merchant@upi
+        amount:
+          type: number
+          example: 50000.00
+        currency:
+          type: string
+          example: INR
+        status:
+          type: string
+          enum: [ACCEPTED, REVIEW, REJECTED]
+          example: REVIEW
+        decisionCode:
+          type: string
+          example: HIGH_VALUE_PAYMENT
+        decisionMessage:
+          type: string
+          example: Payment amount requires manual review.
+        decidedAt:
+          type: string
+          format: date-time
+          example: "2026-10-22T05:30:00Z"
+    LedgerEntry:
+      type: object
+      required:
+        - paymentId
+        - payerVpa
+        - payeeVpa
+        - amount
+        - currency
+        - status
+        - decisionCode
+        - recordedAt
+      properties:
+        paymentId:
+          type: string
+        payerVpa:
+          type: string
+        payeeVpa:
+          type: string
+        amount:
+          type: number
         currency:
           type: string
         status:
