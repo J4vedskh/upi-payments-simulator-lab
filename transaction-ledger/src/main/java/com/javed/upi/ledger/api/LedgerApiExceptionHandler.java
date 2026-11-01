@@ -2,13 +2,25 @@ package com.javed.upi.ledger.api;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class LedgerApiExceptionHandler {
+
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  ResponseEntity<ApiErrorResponse> handleUnreadableBody(HttpServletRequest request) {
+    return ResponseEntity.badRequest().body(ApiErrorResponse.of(
+        HttpStatus.BAD_REQUEST.value(),
+        "VALIDATION_FAILED",
+        "Request body is malformed or missing a required field.",
+        request.getRequestURI(),
+        Map.of()));
+  }
 
   @ExceptionHandler(ResponseStatusException.class)
   ResponseEntity<ApiErrorResponse> handleResponseStatus(

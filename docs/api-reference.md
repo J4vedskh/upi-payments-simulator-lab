@@ -73,7 +73,12 @@ block, and each boundary is inclusive.
 GET /api/ledger/{paymentId}
 ```
 
-The ledger can also ingest a payment event through `POST /internal/events/payments` for local demos without Kafka.
+The ledger can also ingest a payment event through `POST /internal/events/payments`
+for local demos without Kafka. Malformed JSON, an empty body, or a missing
+required event field returns `400` with the same six-field error structure. The
+fixed error is `VALIDATION_FAILED`, the message is `Request body is malformed or
+missing a required field.`, and `validationErrors` is empty. Parser details and
+submitted event values are not returned.
 
 ## Error Response Shape
 
