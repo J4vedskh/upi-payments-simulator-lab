@@ -9,7 +9,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 class OpenApiContractTest {
   private static final String PAYMENT_SERVICE = "http://localhost:8081";
@@ -28,7 +30,9 @@ class OpenApiContractTest {
         .isEqualTo("#/components/schemas/PaymentEvent");
     assertThat(responseSchemaReference(intake, "200"))
         .isEqualTo("#/components/schemas/LedgerEntry");
-    assertThat(map(intake.get("responses"))).containsKey("400");
+    assertThat(responseSchemaReference(intake, "400"))
+        .isEqualTo("#/components/schemas/ErrorResponse");
+    assertInvalidEventExample(intake);
 
     Map<String, Object> schemas = map(map(document.get("components")).get("schemas"));
     assertSchema(
@@ -74,6 +78,12 @@ class OpenApiContractTest {
     assertArbitraryPrecisionAmount(schemas, "LedgerEntry");
     assertStatusEnum(schemas, "LedgerEntry");
     assertDateTime(schemas, "LedgerEntry", "recordedAt");
+    assertSchema(
+        schemas,
+        "ErrorResponse",
+        List.of("timestamp", "status", "error", "message", "path", "validationErrors"));
+    assertThat(map(schemas.get("ErrorResponse")))
+        .containsEntry("additionalProperties", false);
 
     Map<String, Object> submitPayment = operation(paths, "/api/payments", "post");
     assertThat(serverUrls(submitPayment)).containsExactly(PAYMENT_SERVICE);
@@ -102,9 +112,26 @@ class OpenApiContractTest {
 
   private static Map<String, Object> loadContract() throws IOException {
     Path contract = contractPath();
+    LoaderOptions options = new LoaderOptions();
+    options.setAllowDuplicateKeys(false);
     try (InputStream input = Files.newInputStream(contract)) {
-      return map(new Yaml().load(input));
+      return map(new Yaml(new SafeConstructor(options)).load(input));
     }
+  }
+
+  private static void assertInvalidEventExample(Map<String, Object> intake) {
+    Map<String, Object> badRequest = map(map(intake.get("responses")).get("400"));
+    Map<String, Object> content = map(badRequest.get("content"));
+    assertThat(content).containsOnlyKeys("application/json");
+    Map<String, Object> example = map(map(content.get("application/json")).get("example"));
+    assertThat(example)
+        .containsOnlyKeys("timestamp", "status", "error", "message", "path", "validationErrors")
+        .containsEntry("timestamp", "2026-11-01T10:00:00Z")
+        .containsEntry("status", 400)
+        .containsEntry("error", "VALIDATION_FAILED")
+        .containsEntry("message", "Request body is malformed or missing a required field.")
+        .containsEntry("path", "/internal/events/payments");
+    assertThat(map(example.get("validationErrors"))).isEmpty();
   }
 
   private static Path contractPath() {

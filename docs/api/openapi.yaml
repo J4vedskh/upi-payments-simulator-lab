@@ -89,6 +89,17 @@ paths:
                 $ref: "#/components/schemas/LedgerEntry"
         "400":
           description: Payment event JSON is malformed or missing a required field
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                timestamp: "2026-11-01T10:00:00Z"
+                status: 400
+                error: VALIDATION_FAILED
+                message: Request body is malformed or missing a required field.
+                path: /internal/events/payments
+                validationErrors: {}
   /api/ledger:
     get:
       summary: List ledger entries
@@ -275,6 +286,14 @@ components:
           format: date-time
     ErrorResponse:
       type: object
+      additionalProperties: false
+      required:
+        - timestamp
+        - status
+        - error
+        - message
+        - path
+        - validationErrors
       properties:
         timestamp:
           type: string

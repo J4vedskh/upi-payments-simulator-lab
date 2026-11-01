@@ -37,6 +37,7 @@ Every run should report:
 
 | Date | Improvement | Verification |
 | --- | --- | --- |
+| 2026-11-01 | Added a stable structured error for malformed, empty, or incomplete direct-ledger payment-event requests and documented the exact OpenAPI response. | Focused controller and parsed contract tests; `mvn -o -T 1C clean test` passed: 32 tests; `mkdocs build --strict` passed |
 | 2026-10-29 | Added OpenAPI coverage for direct ledger event ingestion, service-specific servers, and profile-aware payment authentication. | Parsed contract and malformed-body tests plus `mvn -o test` passed: 32 tests; `mkdocs build --strict` passed |
 | 2026-10-22 | Added privacy-safe Prometheus counters for payment decisions and ledger record operations. | `mvn -o test` passed: 30 tests; `mkdocs build --strict` passed |
 | 2026-10-21 | Added validated configurable fraud review/block amount thresholds with preserved defaults and exact boundary coverage. | `mvn -o test` passed: 24 tests; `mkdocs build --strict` passed |

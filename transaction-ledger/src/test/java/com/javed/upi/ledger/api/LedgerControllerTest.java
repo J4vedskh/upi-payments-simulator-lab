@@ -4,10 +4,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.javed.upi.ledger.service.TransactionLedgerService;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -27,14 +29,20 @@ class LedgerControllerTest {
 
   @Test
   void invalidPaymentEventsReturnBadRequestWithoutCallingTheLedger() throws Exception {
-    mockMvc.perform(post("/internal/events/payments")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("{}"))
-        .andExpect(status().isBadRequest());
-    mockMvc.perform(post("/internal/events/payments")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"paymentId\":"))
-        .andExpect(status().isBadRequest());
+    for (String body : List.of("{}", "{\"paymentId\":", "")) {
+      mockMvc.perform(post("/internal/events/payments")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(body))
+          .andExpect(status().isBadRequest())
+          .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.timestamp").exists())
+          .andExpect(jsonPath("$.status").value(400))
+          .andExpect(jsonPath("$.error").value("VALIDATION_FAILED"))
+          .andExpect(jsonPath("$.message")
+              .value("Request body is malformed or missing a required field."))
+          .andExpect(jsonPath("$.path").value("/internal/events/payments"))
+          .andExpect(jsonPath("$.validationErrors").isEmpty());
+    }
 
     verifyNoInteractions(ledgerService);
   }
