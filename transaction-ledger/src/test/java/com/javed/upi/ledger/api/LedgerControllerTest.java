@@ -48,6 +48,24 @@ class LedgerControllerTest {
   }
 
   @Test
+  void unsupportedEventMediaTypeReturnsStructuredErrorWithoutCallingTheLedger() throws Exception {
+    mockMvc.perform(post("/internal/events/payments")
+            .contentType(MediaType.TEXT_PLAIN)
+            .content("{}"))
+        .andExpect(status().isUnsupportedMediaType())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.timestamp").exists())
+        .andExpect(jsonPath("$.status").value(415))
+        .andExpect(jsonPath("$.error").value("UNSUPPORTED_MEDIA_TYPE"))
+        .andExpect(jsonPath("$.message")
+            .value("Content-Type is not supported for this endpoint."))
+        .andExpect(jsonPath("$.path").value("/internal/events/payments"))
+        .andExpect(jsonPath("$.validationErrors").isEmpty());
+
+    verifyNoInteractions(ledgerService);
+  }
+
+  @Test
   void missingLedgerEntryReturnsStructuredNotFound() throws Exception {
     when(ledgerService.find("pay_missing"))
         .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Ledger entry not found: pay_missing"));

@@ -82,7 +82,7 @@ submitted event values are not returned.
 
 ## Error Response Shape
 
-Validation and lookup failures return a consistent JSON shape:
+Validation, lookup, and unsupported-media failures return a consistent JSON shape:
 
 ```json
 {
@@ -97,6 +97,15 @@ Validation and lookup failures return a consistent JSON shape:
   }
 }
 ```
+
+Both `POST /api/payments` and `POST /internal/events/payments` use Spring's JSON
+message conversion. An unsupported request content type returns `415` from ledger
+intake. Payment submission does the same in the default profile or after
+secure-profile authentication and `payment.write` authorization succeed; secure
+authentication and authorization failures remain `401` or `403`. The structured
+`415` uses error `UNSUPPORTED_MEDIA_TYPE`, message `Content-Type is not supported
+for this endpoint.`, the request path, and an empty `validationErrors` object.
+The rejected header value and body are not reflected in the response.
 
 This makes client behavior predictable and keeps API failures easy to demonstrate in tests and docs.
 

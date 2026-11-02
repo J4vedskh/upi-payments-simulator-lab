@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -87,6 +88,24 @@ class PaymentControllerTest {
         .andExpect(jsonPath("$.validationErrors.payerVpa").exists())
         .andExpect(jsonPath("$.validationErrors.amount").exists())
         .andExpect(jsonPath("$.validationErrors.currency").exists());
+
+    verifyNoInteractions(paymentService);
+  }
+
+  @Test
+  void unsupportedPaymentMediaTypeReturnsStructuredErrorWithoutCallingService() throws Exception {
+    mockMvc.perform(post("/api/payments")
+            .contentType(MediaType.TEXT_PLAIN)
+            .content("{}"))
+        .andExpect(status().isUnsupportedMediaType())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.timestamp").exists())
+        .andExpect(jsonPath("$.status").value(415))
+        .andExpect(jsonPath("$.error").value("UNSUPPORTED_MEDIA_TYPE"))
+        .andExpect(jsonPath("$.message")
+            .value("Content-Type is not supported for this endpoint."))
+        .andExpect(jsonPath("$.path").value("/api/payments"))
+        .andExpect(jsonPath("$.validationErrors").isEmpty());
 
     verifyNoInteractions(paymentService);
   }
