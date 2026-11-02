@@ -39,6 +39,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "415":
+          description: Request Content-Type is not supported after any required authentication succeeds
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                timestamp: "2026-11-02T05:00:00Z"
+                status: 415
+                error: UNSUPPORTED_MEDIA_TYPE
+                message: Content-Type is not supported for this endpoint.
+                path: /api/payments
+                validationErrors: {}
         "401":
           description: Bearer token is missing or invalid in the secure profile
         "403":
@@ -98,6 +111,19 @@ paths:
                 status: 400
                 error: VALIDATION_FAILED
                 message: Request body is malformed or missing a required field.
+                path: /internal/events/payments
+                validationErrors: {}
+        "415":
+          description: Request Content-Type is not supported
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                timestamp: "2026-11-02T05:00:00Z"
+                status: 415
+                error: UNSUPPORTED_MEDIA_TYPE
+                message: Content-Type is not supported for this endpoint.
                 path: /internal/events/payments
                 validationErrors: {}
   /api/ledger:

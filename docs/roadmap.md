@@ -9,6 +9,7 @@ The rolling branch `codex/daily-progress` is intended to make one real improveme
 - [x] Add bounded Prometheus counters for payment decisions and ledger record operations.
 - [x] Align the OpenAPI contract with internal ledger ingestion and profile-aware payment authentication.
 - [x] Return a stable structured error for unreadable direct-ledger event requests.
+- [x] Standardize structured unsupported-media errors across both JSON write endpoints.
 
 ## Near-Term Improvements
 

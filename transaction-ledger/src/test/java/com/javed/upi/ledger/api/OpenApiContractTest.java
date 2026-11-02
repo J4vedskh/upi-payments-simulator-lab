@@ -33,6 +33,7 @@ class OpenApiContractTest {
     assertThat(responseSchemaReference(intake, "400"))
         .isEqualTo("#/components/schemas/ErrorResponse");
     assertInvalidEventExample(intake);
+    assertUnsupportedMediaTypeExample(intake, "/internal/events/payments");
 
     Map<String, Object> schemas = map(map(document.get("components")).get("schemas"));
     assertSchema(
@@ -94,6 +95,7 @@ class OpenApiContractTest {
     assertThat(map(security.get(0))).isEmpty();
     assertThat(list(map(security.get(1)).get("bearerAuth"))).isEmpty();
     assertThat(map(submitPayment.get("responses"))).containsKeys("401", "403");
+    assertUnsupportedMediaTypeExample(submitPayment, "/api/payments");
 
     Map<String, Object> securitySchemes = map(map(document.get("components"))
         .get("securitySchemes"));
@@ -131,6 +133,24 @@ class OpenApiContractTest {
         .containsEntry("error", "VALIDATION_FAILED")
         .containsEntry("message", "Request body is malformed or missing a required field.")
         .containsEntry("path", "/internal/events/payments");
+    assertThat(map(example.get("validationErrors"))).isEmpty();
+  }
+
+  private static void assertUnsupportedMediaTypeExample(
+      Map<String, Object> operation, String expectedPath) {
+    assertThat(responseSchemaReference(operation, "415"))
+        .isEqualTo("#/components/schemas/ErrorResponse");
+    Map<String, Object> response = map(map(operation.get("responses")).get("415"));
+    Map<String, Object> content = map(response.get("content"));
+    assertThat(content).containsOnlyKeys("application/json");
+    Map<String, Object> example = map(map(content.get("application/json")).get("example"));
+    assertThat(example)
+        .containsOnlyKeys("timestamp", "status", "error", "message", "path", "validationErrors")
+        .containsEntry("timestamp", "2026-11-02T05:00:00Z")
+        .containsEntry("status", 415)
+        .containsEntry("error", "UNSUPPORTED_MEDIA_TYPE")
+        .containsEntry("message", "Content-Type is not supported for this endpoint.")
+        .containsEntry("path", expectedPath);
     assertThat(map(example.get("validationErrors"))).isEmpty();
   }
 

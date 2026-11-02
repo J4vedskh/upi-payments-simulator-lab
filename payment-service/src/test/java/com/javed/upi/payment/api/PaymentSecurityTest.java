@@ -1,8 +1,11 @@
 package com.javed.upi.payment.api;
 
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.javed.upi.payment.security.PaymentSecurityConfiguration;
@@ -45,6 +48,12 @@ class PaymentSecurityTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(VALID_PAYMENT_REQUEST))
         .andExpect(status().isUnauthorized());
+    mockMvc.perform(post("/api/payments")
+            .contentType(MediaType.TEXT_PLAIN)
+            .content("{}"))
+        .andExpect(status().isUnauthorized());
+
+    verifyNoInteractions(paymentService);
   }
 
   @Test
@@ -69,5 +78,24 @@ class PaymentSecurityTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(VALID_PAYMENT_REQUEST))
         .andExpect(status().isAccepted());
+  }
+
+  @Test
+  void authenticatedUnsupportedMediaTypeReturnsStructuredError() throws Exception {
+    mockMvc.perform(post("/api/payments")
+            .with(jwt().jwt(token -> token.claim("scope", "payment.write")))
+            .contentType(MediaType.TEXT_PLAIN)
+            .content("{}"))
+        .andExpect(status().isUnsupportedMediaType())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.timestamp").exists())
+        .andExpect(jsonPath("$.status").value(415))
+        .andExpect(jsonPath("$.error").value("UNSUPPORTED_MEDIA_TYPE"))
+        .andExpect(jsonPath("$.message")
+            .value("Content-Type is not supported for this endpoint."))
+        .andExpect(jsonPath("$.path").value("/api/payments"))
+        .andExpect(jsonPath("$.validationErrors").isEmpty());
+
+    verifyNoInteractions(paymentService);
   }
 }
