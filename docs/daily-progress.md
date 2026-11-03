@@ -37,6 +37,7 @@ Every run should report:
 
 | Date | Improvement | Verification |
 | --- | --- | --- |
+| 2026-11-03 | Added a safe structured error for malformed, empty, or wrong-shaped payment JSON while preserving field validation and secure-profile authentication precedence. | Focused default/secure controller and parsed contract tests; `mvn -o -T 1C clean test` passed: 37 tests; `mkdocs build --strict` passed |
 | 2026-11-02 | Standardized safe structured `415` errors for unsupported payment and ledger write media types and documented both OpenAPI responses. | Focused default/secure controller and parsed contract tests; `mvn -o -T 1C clean test` passed: 35 tests; `mkdocs build --strict` passed |
 | 2026-11-01 | Added a stable structured error for malformed, empty, or incomplete direct-ledger payment-event requests and documented the exact OpenAPI response. | Focused controller and parsed contract tests; `mvn -o -T 1C clean test` passed: 32 tests; `mkdocs build --strict` passed |
 | 2026-10-29 | Added OpenAPI coverage for direct ledger event ingestion, service-specific servers, and profile-aware payment authentication. | Parsed contract and malformed-body tests plus `mvn -o test` passed: 32 tests; `mkdocs build --strict` passed |

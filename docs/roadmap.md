@@ -10,6 +10,7 @@ The rolling branch `codex/daily-progress` is intended to make one real improveme
 - [x] Align the OpenAPI contract with internal ledger ingestion and profile-aware payment authentication.
 - [x] Return a stable structured error for unreadable direct-ledger event requests.
 - [x] Standardize structured unsupported-media errors across both JSON write endpoints.
+- [x] Return a stable structured error for unreadable payment-submission bodies.
 
 ## Near-Term Improvements
 

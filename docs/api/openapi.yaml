@@ -34,11 +34,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/PaymentResponse"
         "400":
-          description: Request validation failed
+          description: Request validation failed or JSON body could not be read
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                fieldValidation:
+                  summary: Bindable JSON failed field validation
+                  value:
+                    timestamp: "2026-11-03T05:00:00Z"
+                    status: 400
+                    error: VALIDATION_FAILED
+                    message: Request validation failed.
+                    path: /api/payments
+                    validationErrors:
+                      payerVpa: must not be blank
+                malformedBody:
+                  summary: JSON body could not be read
+                  value:
+                    timestamp: "2026-11-03T05:00:00Z"
+                    status: 400
+                    error: VALIDATION_FAILED
+                    message: Request body is malformed.
+                    path: /api/payments
+                    validationErrors: {}
         "415":
           description: Request Content-Type is not supported after any required authentication succeeds
           content:

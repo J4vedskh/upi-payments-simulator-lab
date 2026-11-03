@@ -52,6 +52,10 @@ class PaymentSecurityTest {
             .contentType(MediaType.TEXT_PLAIN)
             .content("{}"))
         .andExpect(status().isUnauthorized());
+    mockMvc.perform(post("/api/payments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"payerVpa\":"))
+        .andExpect(status().isUnauthorized());
 
     verifyNoInteractions(paymentService);
   }
@@ -93,6 +97,24 @@ class PaymentSecurityTest {
         .andExpect(jsonPath("$.error").value("UNSUPPORTED_MEDIA_TYPE"))
         .andExpect(jsonPath("$.message")
             .value("Content-Type is not supported for this endpoint."))
+        .andExpect(jsonPath("$.path").value("/api/payments"))
+        .andExpect(jsonPath("$.validationErrors").isEmpty());
+
+    verifyNoInteractions(paymentService);
+  }
+
+  @Test
+  void authenticatedUnreadableBodyReturnsStructuredError() throws Exception {
+    mockMvc.perform(post("/api/payments")
+            .with(jwt().jwt(token -> token.claim("scope", "payment.write")))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{\"payerVpa\":"))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.timestamp").exists())
+        .andExpect(jsonPath("$.status").value(400))
+        .andExpect(jsonPath("$.error").value("VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.message").value("Request body is malformed."))
         .andExpect(jsonPath("$.path").value("/api/payments"))
         .andExpect(jsonPath("$.validationErrors").isEmpty());
 

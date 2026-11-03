@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -14,6 +15,16 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class PaymentApiExceptionHandler {
+
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  ResponseEntity<ApiErrorResponse> handleUnreadableBody(HttpServletRequest request) {
+    return ResponseEntity.badRequest().body(ApiErrorResponse.of(
+        HttpStatus.BAD_REQUEST.value(),
+        "VALIDATION_FAILED",
+        "Request body is malformed.",
+        request.getRequestURI(),
+        Map.of()));
+  }
 
   @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
   ResponseEntity<ApiErrorResponse> handleUnsupportedMediaType(HttpServletRequest request) {
