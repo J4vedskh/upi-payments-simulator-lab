@@ -16,6 +16,7 @@ import com.javed.upi.payment.security.PaymentSecurityConfiguration;
 import com.javed.upi.payment.service.PaymentService;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -88,6 +89,35 @@ class PaymentControllerTest {
         .andExpect(jsonPath("$.validationErrors.payerVpa").exists())
         .andExpect(jsonPath("$.validationErrors.amount").exists())
         .andExpect(jsonPath("$.validationErrors.currency").exists());
+    mockMvc.perform(post("/api/payments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("{}"))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message").value("Request validation failed."))
+        .andExpect(jsonPath("$.validationErrors.payerVpa").exists())
+        .andExpect(jsonPath("$.validationErrors.payeeVpa").exists())
+        .andExpect(jsonPath("$.validationErrors.amount").exists())
+        .andExpect(jsonPath("$.validationErrors.currency").exists())
+        .andExpect(jsonPath("$.validationErrors.channel").exists());
+
+    verifyNoInteractions(paymentService);
+  }
+
+  @Test
+  void unreadablePaymentBodiesReturnStructuredErrorWithoutCallingService() throws Exception {
+    for (String body : List.of("{\"payerVpa\":", "", "[]")) {
+      mockMvc.perform(post("/api/payments")
+              .contentType(MediaType.APPLICATION_JSON)
+              .content(body))
+          .andExpect(status().isBadRequest())
+          .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+          .andExpect(jsonPath("$.timestamp").exists())
+          .andExpect(jsonPath("$.status").value(400))
+          .andExpect(jsonPath("$.error").value("VALIDATION_FAILED"))
+          .andExpect(jsonPath("$.message").value("Request body is malformed."))
+          .andExpect(jsonPath("$.path").value("/api/payments"))
+          .andExpect(jsonPath("$.validationErrors").isEmpty());
+    }
 
     verifyNoInteractions(paymentService);
   }

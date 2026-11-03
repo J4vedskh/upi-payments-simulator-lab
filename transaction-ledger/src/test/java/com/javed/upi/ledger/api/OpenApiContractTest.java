@@ -95,6 +95,7 @@ class OpenApiContractTest {
     assertThat(map(security.get(0))).isEmpty();
     assertThat(list(map(security.get(1)).get("bearerAuth"))).isEmpty();
     assertThat(map(submitPayment.get("responses"))).containsKeys("401", "403");
+    assertPaymentBadRequestExamples(submitPayment);
     assertUnsupportedMediaTypeExample(submitPayment, "/api/payments");
 
     Map<String, Object> securitySchemes = map(map(document.get("components"))
@@ -152,6 +153,38 @@ class OpenApiContractTest {
         .containsEntry("message", "Content-Type is not supported for this endpoint.")
         .containsEntry("path", expectedPath);
     assertThat(map(example.get("validationErrors"))).isEmpty();
+  }
+
+  private static void assertPaymentBadRequestExamples(Map<String, Object> submitPayment) {
+    assertThat(responseSchemaReference(submitPayment, "400"))
+        .isEqualTo("#/components/schemas/ErrorResponse");
+    Map<String, Object> response = map(map(submitPayment.get("responses")).get("400"));
+    Map<String, Object> content = map(response.get("content"));
+    assertThat(content).containsOnlyKeys("application/json");
+    Map<String, Object> examples = map(map(content.get("application/json")).get("examples"));
+    assertThat(examples).containsOnlyKeys("fieldValidation", "malformedBody");
+
+    Map<String, Object> fieldValidation = map(map(examples.get("fieldValidation")).get("value"));
+    assertThat(fieldValidation)
+        .containsOnlyKeys("timestamp", "status", "error", "message", "path", "validationErrors")
+        .containsEntry("timestamp", "2026-11-03T05:00:00Z")
+        .containsEntry("status", 400)
+        .containsEntry("error", "VALIDATION_FAILED")
+        .containsEntry("message", "Request validation failed.")
+        .containsEntry("path", "/api/payments");
+    assertThat(map(fieldValidation.get("validationErrors")))
+        .containsOnlyKeys("payerVpa")
+        .containsEntry("payerVpa", "must not be blank");
+
+    Map<String, Object> malformedBody = map(map(examples.get("malformedBody")).get("value"));
+    assertThat(malformedBody)
+        .containsOnlyKeys("timestamp", "status", "error", "message", "path", "validationErrors")
+        .containsEntry("timestamp", "2026-11-03T05:00:00Z")
+        .containsEntry("status", 400)
+        .containsEntry("error", "VALIDATION_FAILED")
+        .containsEntry("message", "Request body is malformed.")
+        .containsEntry("path", "/api/payments");
+    assertThat(map(malformedBody.get("validationErrors"))).isEmpty();
   }
 
   private static Path contractPath() {

@@ -98,6 +98,14 @@ Validation, lookup, and unsupported-media failures return a consistent JSON shap
 }
 ```
 
+For payment submission, a bindable JSON object with invalid or missing fields,
+including `{}`, returns `Request validation failed.` with field-level entries.
+Malformed JSON, an empty body, or the wrong top-level JSON type returns `400` with
+the same `VALIDATION_FAILED` code, fixed message `Request body is malformed.`, and
+an empty `validationErrors` object. Parser details and submitted values are not
+returned. In the secure profile, authentication and `payment.write` authorization
+still happen before body parsing, so those failures remain `401` or `403`.
+
 Both `POST /api/payments` and `POST /internal/events/payments` use Spring's JSON
 message conversion. An unsupported request content type returns `415` from ledger
 intake. Payment submission does the same in the default profile or after
