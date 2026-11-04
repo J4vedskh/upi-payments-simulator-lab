@@ -67,8 +67,11 @@ mvn -pl payment-service spring-boot:run "-Dspring-boot.run.profiles=secure"
 ```
 
 Clients must send a bearer JWT containing `payment.write` in its `scope` claim.
-Missing or invalid tokens return `401`; authenticated tokens without the scope return
-`403`. Use `secure,kafka` when both profiles are required.
+Missing or invalid tokens return the structured `UNAUTHORIZED` `401`; authenticated
+tokens without the scope return the structured `FORBIDDEN` `403`. Both responses
+retain `WWW-Authenticate` and use fixed safe JSON messages that do not echo token
+or decoder details. The challenge header can still include standard Bearer protocol
+error metadata. Use `secure,kafka` when both profiles are required.
 
 ## Prometheus Metrics
 

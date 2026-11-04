@@ -74,8 +74,40 @@ paths:
                 validationErrors: {}
         "401":
           description: Bearer token is missing or invalid in the secure profile
+          headers:
+            WWW-Authenticate:
+              description: Standard Bearer authentication challenge
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                timestamp: "2026-11-04T05:00:00Z"
+                status: 401
+                error: UNAUTHORIZED
+                message: Bearer authentication is required.
+                path: /api/payments
+                validationErrors: {}
         "403":
           description: Bearer token does not grant the payment.write scope
+          headers:
+            WWW-Authenticate:
+              description: Standard Bearer insufficient-scope challenge
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                timestamp: "2026-11-04T05:00:00Z"
+                status: 403
+                error: FORBIDDEN
+                message: Access is denied.
+                path: /api/payments
+                validationErrors: {}
   /api/payments/{paymentId}:
     get:
       summary: Fetch a payment decision

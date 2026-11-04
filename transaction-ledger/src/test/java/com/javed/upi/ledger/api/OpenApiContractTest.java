@@ -94,7 +94,16 @@ class OpenApiContractTest {
     assertThat(security).hasSize(2);
     assertThat(map(security.get(0))).isEmpty();
     assertThat(list(map(security.get(1)).get("bearerAuth"))).isEmpty();
-    assertThat(map(submitPayment.get("responses"))).containsKeys("401", "403");
+    assertSecurePaymentErrorExample(
+        submitPayment,
+        "401",
+        "UNAUTHORIZED",
+        "Bearer authentication is required.");
+    assertSecurePaymentErrorExample(
+        submitPayment,
+        "403",
+        "FORBIDDEN",
+        "Access is denied.");
     assertPaymentBadRequestExamples(submitPayment);
     assertUnsupportedMediaTypeExample(submitPayment, "/api/payments");
 
@@ -185,6 +194,29 @@ class OpenApiContractTest {
         .containsEntry("message", "Request body is malformed.")
         .containsEntry("path", "/api/payments");
     assertThat(map(malformedBody.get("validationErrors"))).isEmpty();
+  }
+
+  private static void assertSecurePaymentErrorExample(
+      Map<String, Object> operation,
+      String statusCode,
+      String error,
+      String message) {
+    assertThat(responseSchemaReference(operation, statusCode))
+        .isEqualTo("#/components/schemas/ErrorResponse");
+    Map<String, Object> response = map(map(operation.get("responses")).get(statusCode));
+    Map<String, Object> challenge = map(map(response.get("headers")).get("WWW-Authenticate"));
+    assertThat(map(challenge.get("schema"))).containsEntry("type", "string");
+    Map<String, Object> content = map(response.get("content"));
+    assertThat(content).containsOnlyKeys("application/json");
+    Map<String, Object> example = map(map(content.get("application/json")).get("example"));
+    assertThat(example)
+        .containsOnlyKeys("timestamp", "status", "error", "message", "path", "validationErrors")
+        .containsEntry("timestamp", "2026-11-04T05:00:00Z")
+        .containsEntry("status", Integer.parseInt(statusCode))
+        .containsEntry("error", error)
+        .containsEntry("message", message)
+        .containsEntry("path", "/api/payments");
+    assertThat(map(example.get("validationErrors"))).isEmpty();
   }
 
   private static Path contractPath() {

@@ -15,9 +15,15 @@ JWT whose `scope` claim contains `payment.write`.
 | `GET /actuator/health` and `GET /actuator/info` | Public | Public |
 | `GET /actuator/prometheus` | Public | Public |
 
-Secure payment submission returns `401` when the bearer token is missing or invalid
-and `403` when the token does not provide `payment.write`. The signing key is supplied
-at runtime through `PAYMENT_JWT_SECRET`; no signing credential is stored in Git.
+Secure payment submission returns `401` with error `UNAUTHORIZED` and fixed message
+`Bearer authentication is required.` when the token is missing or invalid. An
+authenticated token without `payment.write` returns `403` with error `FORBIDDEN`
+and fixed message `Access is denied.` Both responses use the standard six-field
+JSON error shape, keep `validationErrors` empty, and preserve the standard
+`WWW-Authenticate` header. Their fixed JSON bodies do not reflect token values or
+decoder details; the challenge header can still include standard Bearer protocol
+error metadata. The signing key is supplied at runtime through
+`PAYMENT_JWT_SECRET`; no signing credential is stored in Git.
 
 ## Submit Payment
 
