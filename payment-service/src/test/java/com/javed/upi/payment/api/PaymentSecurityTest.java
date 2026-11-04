@@ -1,10 +1,13 @@
 package com.javed.upi.payment.api;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -15,10 +18,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 @ActiveProfiles("secure")
 @WebMvcTest(PaymentController.class)
@@ -44,18 +49,19 @@ class PaymentSecurityTest {
 
   @Test
   void paymentSubmissionRejectsUnauthenticatedRequestsInSecureProfile() throws Exception {
-    mockMvc.perform(post("/api/payments")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content(VALID_PAYMENT_REQUEST))
-        .andExpect(status().isUnauthorized());
-    mockMvc.perform(post("/api/payments")
-            .contentType(MediaType.TEXT_PLAIN)
-            .content("{}"))
-        .andExpect(status().isUnauthorized());
-    mockMvc.perform(post("/api/payments")
-            .contentType(MediaType.APPLICATION_JSON)
-            .content("{\"payerVpa\":"))
-        .andExpect(status().isUnauthorized());
+    assertStructuredUnauthorized(post("/api/payments")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(VALID_PAYMENT_REQUEST));
+    assertStructuredUnauthorized(post("/api/payments")
+        .contentType(MediaType.TEXT_PLAIN)
+        .content("{}"));
+    assertStructuredUnauthorized(post("/api/payments")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{\"payerVpa\":"));
+    assertStructuredUnauthorized(post("/api/payments")
+        .header(HttpHeaders.AUTHORIZATION, "Bearer invalid-token")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(VALID_PAYMENT_REQUEST));
 
     verifyNoInteractions(paymentService);
   }
@@ -72,7 +78,17 @@ class PaymentSecurityTest {
             .with(jwt().jwt(token -> token.claim("scope", "payment.read")))
             .contentType(MediaType.APPLICATION_JSON)
             .content(VALID_PAYMENT_REQUEST))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isForbidden())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, containsString("Bearer")))
+        .andExpect(jsonPath("$.timestamp").exists())
+        .andExpect(jsonPath("$.status").value(403))
+        .andExpect(jsonPath("$.error").value("FORBIDDEN"))
+        .andExpect(jsonPath("$.message").value("Access is denied."))
+        .andExpect(jsonPath("$.path").value("/api/payments"))
+        .andExpect(jsonPath("$.validationErrors").isEmpty());
+
+    verifyNoInteractions(paymentService);
   }
 
   @Test
@@ -119,5 +135,19 @@ class PaymentSecurityTest {
         .andExpect(jsonPath("$.validationErrors").isEmpty());
 
     verifyNoInteractions(paymentService);
+  }
+
+  private void assertStructuredUnauthorized(MockHttpServletRequestBuilder request) throws Exception {
+    mockMvc.perform(request)
+        .andExpect(status().isUnauthorized())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, containsString("Bearer")))
+        .andExpect(header().string(HttpHeaders.WWW_AUTHENTICATE, not(containsString("invalid-token"))))
+        .andExpect(jsonPath("$.timestamp").exists())
+        .andExpect(jsonPath("$.status").value(401))
+        .andExpect(jsonPath("$.error").value("UNAUTHORIZED"))
+        .andExpect(jsonPath("$.message").value("Bearer authentication is required."))
+        .andExpect(jsonPath("$.path").value("/api/payments"))
+        .andExpect(jsonPath("$.validationErrors").isEmpty());
   }
 }

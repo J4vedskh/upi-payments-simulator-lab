@@ -11,6 +11,7 @@ The rolling branch `codex/daily-progress` is intended to make one real improveme
 - [x] Return a stable structured error for unreadable direct-ledger event requests.
 - [x] Standardize structured unsupported-media errors across both JSON write endpoints.
 - [x] Return a stable structured error for unreadable payment-submission bodies.
+- [x] Standardize safe structured secure-profile authentication and authorization errors.
 
 ## Near-Term Improvements
 
