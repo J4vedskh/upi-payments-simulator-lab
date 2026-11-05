@@ -40,6 +40,16 @@ class PaymentSecurityTest {
         "channel": "MOBILE"
       }
       """;
+  private static final String PAYMENT_REQUEST_WITH_UNKNOWN_FIELD = """
+      {
+        "payerVpa": "alice@upi",
+        "payeeVpa": "merchant@upi",
+        "amount": 249.50,
+        "currency": "INR",
+        "channel": "MOBILE",
+        "unexpected": "not-declared"
+      }
+      """;
 
   @Autowired
   private MockMvc mockMvc;
@@ -62,6 +72,9 @@ class PaymentSecurityTest {
         .header(HttpHeaders.AUTHORIZATION, "Bearer invalid-token")
         .contentType(MediaType.APPLICATION_JSON)
         .content(VALID_PAYMENT_REQUEST));
+    assertStructuredUnauthorized(post("/api/payments")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(PAYMENT_REQUEST_WITH_UNKNOWN_FIELD));
 
     verifyNoInteractions(paymentService);
   }
@@ -125,6 +138,24 @@ class PaymentSecurityTest {
             .with(jwt().jwt(token -> token.claim("scope", "payment.write")))
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"payerVpa\":"))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.timestamp").exists())
+        .andExpect(jsonPath("$.status").value(400))
+        .andExpect(jsonPath("$.error").value("VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.message").value("Request body is malformed."))
+        .andExpect(jsonPath("$.path").value("/api/payments"))
+        .andExpect(jsonPath("$.validationErrors").isEmpty());
+
+    verifyNoInteractions(paymentService);
+  }
+
+  @Test
+  void authenticatedUnknownFieldReturnsStructuredError() throws Exception {
+    mockMvc.perform(post("/api/payments")
+            .with(jwt().jwt(token -> token.claim("scope", "payment.write")))
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(PAYMENT_REQUEST_WITH_UNKNOWN_FIELD))
         .andExpect(status().isBadRequest())
         .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.timestamp").exists())

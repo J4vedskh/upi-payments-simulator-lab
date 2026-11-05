@@ -123,6 +123,32 @@ class PaymentControllerTest {
   }
 
   @Test
+  void unknownPaymentFieldsReturnStructuredErrorWithoutCallingService() throws Exception {
+    mockMvc.perform(post("/api/payments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "payerVpa": "alice@upi",
+                  "payeeVpa": "merchant@upi",
+                  "amount": 249.50,
+                  "currency": "INR",
+                  "channel": "MOBILE",
+                  "unexpected": "not-declared"
+                }
+                """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.timestamp").exists())
+        .andExpect(jsonPath("$.status").value(400))
+        .andExpect(jsonPath("$.error").value("VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.message").value("Request body is malformed."))
+        .andExpect(jsonPath("$.path").value("/api/payments"))
+        .andExpect(jsonPath("$.validationErrors").isEmpty());
+
+    verifyNoInteractions(paymentService);
+  }
+
+  @Test
   void unsupportedPaymentMediaTypeReturnsStructuredErrorWithoutCallingService() throws Exception {
     mockMvc.perform(post("/api/payments")
             .contentType(MediaType.TEXT_PLAIN)

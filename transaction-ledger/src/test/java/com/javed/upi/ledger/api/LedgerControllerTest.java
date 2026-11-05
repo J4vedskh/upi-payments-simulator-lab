@@ -48,6 +48,37 @@ class LedgerControllerTest {
   }
 
   @Test
+  void unknownEventFieldsReturnStructuredErrorWithoutCallingTheLedger() throws Exception {
+    mockMvc.perform(post("/internal/events/payments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "paymentId": "pay_123",
+                  "payerVpa": "alice@upi",
+                  "payeeVpa": "merchant@upi",
+                  "amount": 249.50,
+                  "currency": "INR",
+                  "status": "ACCEPTED",
+                  "decisionCode": "APPROVED",
+                  "decisionMessage": "Payment approved.",
+                  "decidedAt": "2026-11-05T05:00:00Z",
+                  "unexpected": "not-declared"
+                }
+                """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.timestamp").exists())
+        .andExpect(jsonPath("$.status").value(400))
+        .andExpect(jsonPath("$.error").value("VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.message")
+            .value("Request body is malformed or missing a required field."))
+        .andExpect(jsonPath("$.path").value("/internal/events/payments"))
+        .andExpect(jsonPath("$.validationErrors").isEmpty());
+
+    verifyNoInteractions(ledgerService);
+  }
+
+  @Test
   void unsupportedEventMediaTypeReturnsStructuredErrorWithoutCallingTheLedger() throws Exception {
     mockMvc.perform(post("/internal/events/payments")
             .contentType(MediaType.TEXT_PLAIN)
