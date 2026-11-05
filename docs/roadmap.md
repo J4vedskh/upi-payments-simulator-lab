@@ -12,6 +12,7 @@ The rolling branch `codex/daily-progress` is intended to make one real improveme
 - [x] Standardize structured unsupported-media errors across both JSON write endpoints.
 - [x] Return a stable structured error for unreadable payment-submission bodies.
 - [x] Standardize safe structured secure-profile authentication and authorization errors.
+- [x] Reject undeclared fields on both HTTP JSON write contracts.
 
 ## Near-Term Improvements
 

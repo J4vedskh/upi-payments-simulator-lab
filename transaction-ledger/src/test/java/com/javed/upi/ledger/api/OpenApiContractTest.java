@@ -40,6 +40,8 @@ class OpenApiContractTest {
         schemas,
         "PaymentRequest",
         List.of("payerVpa", "payeeVpa", "amount", "currency", "channel"));
+    assertThat(map(schemas.get("PaymentRequest")))
+        .containsEntry("additionalProperties", false);
     List<String> paymentResponseFields = List.of(
         "paymentId",
         "payerVpa",
@@ -61,6 +63,8 @@ class OpenApiContractTest {
         schemas,
         "PaymentEvent",
         paymentResponseFields);
+    assertThat(map(schemas.get("PaymentEvent")))
+        .containsEntry("additionalProperties", false);
     assertArbitraryPrecisionAmount(schemas, "PaymentEvent");
     assertStatusEnum(schemas, "PaymentEvent");
     assertDateTime(schemas, "PaymentEvent", "decidedAt");

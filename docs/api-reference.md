@@ -112,6 +112,11 @@ an empty `validationErrors` object. Parser details and submitted values are not
 returned. In the secure profile, authentication and `payment.write` authorization
 still happen before body parsing, so those failures remain `401` or `403`.
 
+The payment and direct-ledger HTTP request schemas are closed: an undeclared JSON
+field is rejected with the same safe structured `400` used for unreadable input,
+and neither service method is called. This strict binding applies to HTTP request
+bodies; Kafka deserialization remains a separate profile-level boundary.
+
 Both `POST /api/payments` and `POST /internal/events/payments` use Spring's JSON
 message conversion. An unsupported request content type returns `415` from ledger
 intake. Payment submission does the same in the default profile or after

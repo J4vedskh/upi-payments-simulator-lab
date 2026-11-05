@@ -34,7 +34,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/PaymentResponse"
         "400":
-          description: Request validation failed or JSON body could not be read
+          description: Request validation failed, JSON body could not be read, or an undeclared field was supplied
           content:
             application/json:
               schema:
@@ -51,7 +51,7 @@ paths:
                     validationErrors:
                       payerVpa: must not be blank
                 malformedBody:
-                  summary: JSON body could not be read
+                  summary: JSON body could not be read or contained an undeclared field
                   value:
                     timestamp: "2026-11-03T05:00:00Z"
                     status: 400
@@ -153,7 +153,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LedgerEntry"
         "400":
-          description: Payment event JSON is malformed or missing a required field
+          description: Payment event JSON is malformed, missing a required field, or contains an undeclared field
           content:
             application/json:
               schema:
@@ -234,6 +234,7 @@ components:
   schemas:
     PaymentRequest:
       type: object
+      additionalProperties: false
       required:
         - payerVpa
         - payeeVpa
@@ -292,6 +293,7 @@ components:
           format: date-time
     PaymentEvent:
       type: object
+      additionalProperties: false
       required:
         - paymentId
         - payerVpa
