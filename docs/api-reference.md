@@ -86,6 +86,12 @@ fixed error is `VALIDATION_FAILED`, the message is `Request body is malformed or
 missing a required field.`, and `validationErrors` is empty. Parser details and
 submitted event values are not returned.
 
+Missing `GET /api/payments/{paymentId}` and `GET /api/ledger/{paymentId}` lookups
+return the stable error code `NOT_FOUND`, fixed messages `Payment not found.` or
+`Ledger entry not found.`, and an empty `validationErrors` object. The `message`
+does not duplicate the supplied identifier; `path` retains the normal request URI
+so the client can identify which request failed.
+
 ## Error Response Shape
 
 Validation, lookup, and unsupported-media failures return a consistent JSON shape:

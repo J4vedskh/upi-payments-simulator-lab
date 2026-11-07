@@ -99,13 +99,16 @@ class LedgerControllerTest {
   @Test
   void missingLedgerEntryReturnsStructuredNotFound() throws Exception {
     when(ledgerService.find("pay_missing"))
-        .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Ledger entry not found: pay_missing"));
+        .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Ledger entry not found."));
 
     mockMvc.perform(get("/api/ledger/pay_missing"))
         .andExpect(status().isNotFound())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.status").value(404))
-        .andExpect(jsonPath("$.message").value("Ledger entry not found: pay_missing"))
-        .andExpect(jsonPath("$.path").value("/api/ledger/pay_missing"));
+        .andExpect(jsonPath("$.error").value("NOT_FOUND"))
+        .andExpect(jsonPath("$.message").value("Ledger entry not found."))
+        .andExpect(jsonPath("$.path").value("/api/ledger/pay_missing"))
+        .andExpect(jsonPath("$.validationErrors").isEmpty());
   }
 }
 

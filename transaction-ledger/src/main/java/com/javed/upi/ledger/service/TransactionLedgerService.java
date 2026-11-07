@@ -39,7 +39,7 @@ public class TransactionLedgerService {
   public LedgerEntry find(String paymentId) {
     LedgerEntry entry = entries.get(paymentId);
     if (entry == null) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ledger entry not found: " + paymentId);
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Ledger entry not found.");
     }
     return entry;
   }

@@ -2,7 +2,6 @@ package com.javed.upi.payment.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.javed.upi.events.PaymentEvent;
 import com.javed.upi.events.PaymentStatus;
@@ -80,7 +79,8 @@ class PaymentServiceTest {
         ResponseStatusException.class,
         () -> service.find("pay_missing"));
 
-    assertTrue(exception.getMessage().contains("Payment not found"));
+    assertEquals(404, exception.getStatusCode().value());
+    assertEquals("Payment not found.", exception.getReason());
   }
 
   private double decisionCount(PaymentStatus status) {

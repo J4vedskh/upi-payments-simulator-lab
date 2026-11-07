@@ -37,6 +37,7 @@ Every run should report:
 
 | Date | Improvement | Verification |
 | --- | --- | --- |
+| 2026-11-07 | Stabilized payment and ledger lookup `404` responses with fixed messages and symbolic error codes while retaining the request URI path. | Focused service/controller and parsed contract tests; `mvn -o -T 1C clean test` passed: 40 tests; `mkdocs build --strict` passed |
 | 2026-11-05 | Closed both HTTP JSON write contracts so undeclared fields fail safely before payment or ledger service calls. | Focused default/secure controller and parsed contract tests; `mvn -o -T 1C clean test` passed: 40 tests; `mkdocs build --strict` passed |
 | 2026-11-04 | Added safe structured secure-profile `401` and `403` errors while preserving standard Bearer challenge headers and authentication precedence. | Focused security and parsed contract tests; `mvn -o -T 1C clean test` passed: 37 tests; `mkdocs build --strict` passed |
 | 2026-11-03 | Added a safe structured error for malformed, empty, or wrong-shaped payment JSON while preserving field validation and secure-profile authentication precedence. | Focused default/secure controller and parsed contract tests; `mvn -o -T 1C clean test` passed: 37 tests; `mkdocs build --strict` passed |

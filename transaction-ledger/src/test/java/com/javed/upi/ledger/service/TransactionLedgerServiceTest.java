@@ -58,7 +58,12 @@ class TransactionLedgerServiceTest {
 
   @Test
   void missingLedgerEntryReturnsNotFound() {
-    assertThrows(ResponseStatusException.class, () -> service.find("pay_missing"));
+    ResponseStatusException exception = assertThrows(
+        ResponseStatusException.class,
+        () -> service.find("pay_missing"));
+
+    assertEquals(404, exception.getStatusCode().value());
+    assertEquals("Ledger entry not found.", exception.getReason());
   }
 
   private static PaymentEvent event(String paymentId, PaymentStatus status) {
