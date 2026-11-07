@@ -78,7 +78,7 @@ public class PaymentService {
   public PaymentResponse find(String paymentId) {
     PaymentEvent event = payments.get(paymentId);
     if (event == null) {
-      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found: " + paymentId);
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found.");
     }
     return PaymentResponse.from(event);
   }

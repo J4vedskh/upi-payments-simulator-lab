@@ -118,12 +118,14 @@ class OpenApiContractTest {
         .containsEntry("scheme", "bearer")
         .containsEntry("bearerFormat", "JWT");
 
-    assertThat(serverUrls(operation(paths, "/api/payments/{paymentId}", "get")))
-        .containsExactly(PAYMENT_SERVICE);
+    Map<String, Object> paymentLookup = operation(paths, "/api/payments/{paymentId}", "get");
+    assertThat(serverUrls(paymentLookup)).containsExactly(PAYMENT_SERVICE);
+    assertNotFoundExample(paymentLookup, "Payment not found.", "/api/payments/pay_missing");
     assertThat(serverUrls(operation(paths, "/api/ledger", "get")))
         .containsExactly(LEDGER_SERVICE);
-    assertThat(serverUrls(operation(paths, "/api/ledger/{paymentId}", "get")))
-        .containsExactly(LEDGER_SERVICE);
+    Map<String, Object> ledgerLookup = operation(paths, "/api/ledger/{paymentId}", "get");
+    assertThat(serverUrls(ledgerLookup)).containsExactly(LEDGER_SERVICE);
+    assertNotFoundExample(ledgerLookup, "Ledger entry not found.", "/api/ledger/pay_missing");
   }
 
   private static Map<String, Object> loadContract() throws IOException {
@@ -220,6 +222,26 @@ class OpenApiContractTest {
         .containsEntry("error", error)
         .containsEntry("message", message)
         .containsEntry("path", "/api/payments");
+    assertThat(map(example.get("validationErrors"))).isEmpty();
+  }
+
+  private static void assertNotFoundExample(
+      Map<String, Object> operation,
+      String message,
+      String path) {
+    assertThat(responseSchemaReference(operation, "404"))
+        .isEqualTo("#/components/schemas/ErrorResponse");
+    Map<String, Object> response = map(map(operation.get("responses")).get("404"));
+    Map<String, Object> content = map(response.get("content"));
+    assertThat(content).containsOnlyKeys("application/json");
+    Map<String, Object> example = map(map(content.get("application/json")).get("example"));
+    assertThat(example)
+        .containsOnlyKeys("timestamp", "status", "error", "message", "path", "validationErrors")
+        .containsEntry("timestamp", "2026-11-07T13:00:00Z")
+        .containsEntry("status", 404)
+        .containsEntry("error", "NOT_FOUND")
+        .containsEntry("message", message)
+        .containsEntry("path", path);
     assertThat(map(example.get("validationErrors"))).isEmpty();
   }
 

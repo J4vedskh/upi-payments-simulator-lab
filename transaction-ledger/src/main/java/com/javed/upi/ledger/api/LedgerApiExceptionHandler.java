@@ -42,10 +42,15 @@ public class LedgerApiExceptionHandler {
 
     return ResponseEntity.status(exception.getStatusCode()).body(ApiErrorResponse.of(
         status,
-        exception.getStatusCode().toString(),
+        errorCode(status),
         reason,
         request.getRequestURI(),
         Map.of()));
+  }
+
+  private static String errorCode(int status) {
+    HttpStatus knownStatus = HttpStatus.resolve(status);
+    return knownStatus == null ? Integer.toString(status) : knownStatus.name();
   }
 }
 

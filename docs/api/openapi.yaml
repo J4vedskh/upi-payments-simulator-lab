@@ -130,6 +130,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+              example:
+                timestamp: "2026-11-07T13:00:00Z"
+                status: 404
+                error: NOT_FOUND
+                message: Payment not found.
+                path: /api/payments/pay_missing
+                validationErrors: {}
   /internal/events/payments:
     post:
       summary: Record a payment event directly in the ledger
@@ -216,6 +223,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+              example:
+                timestamp: "2026-11-07T13:00:00Z"
+                status: 404
+                error: NOT_FOUND
+                message: Ledger entry not found.
+                path: /api/ledger/pay_missing
+                validationErrors: {}
 components:
   securitySchemes:
     bearerAuth:

@@ -169,13 +169,16 @@ class PaymentControllerTest {
   @Test
   void missingPaymentReturnsStructuredNotFound() throws Exception {
     when(paymentService.find("pay_missing"))
-        .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found: pay_missing"));
+        .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Payment not found."));
 
     mockMvc.perform(get("/api/payments/pay_missing"))
         .andExpect(status().isNotFound())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
         .andExpect(jsonPath("$.status").value(404))
-        .andExpect(jsonPath("$.message").value("Payment not found: pay_missing"))
-        .andExpect(jsonPath("$.path").value("/api/payments/pay_missing"));
+        .andExpect(jsonPath("$.error").value("NOT_FOUND"))
+        .andExpect(jsonPath("$.message").value("Payment not found."))
+        .andExpect(jsonPath("$.path").value("/api/payments/pay_missing"))
+        .andExpect(jsonPath("$.validationErrors").isEmpty());
   }
 }
 
