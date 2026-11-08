@@ -104,6 +104,34 @@ class PaymentControllerTest {
   }
 
   @Test
+  void whitespaceOnlyPaymentFieldsReturnStructuredValidationErrors() throws Exception {
+    mockMvc.perform(post("/api/payments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content("""
+                {
+                  "payerVpa": "   ",
+                  "payeeVpa": "   ",
+                  "amount": 249.50,
+                  "currency": "   ",
+                  "channel": "   "
+                }
+                """))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.status").value(400))
+        .andExpect(jsonPath("$.error").value("VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.message").value("Request validation failed."))
+        .andExpect(jsonPath("$.path").value("/api/payments"))
+        .andExpect(jsonPath("$.validationErrors.length()").value(4))
+        .andExpect(jsonPath("$.validationErrors.payerVpa").exists())
+        .andExpect(jsonPath("$.validationErrors.payeeVpa").exists())
+        .andExpect(jsonPath("$.validationErrors.currency").exists())
+        .andExpect(jsonPath("$.validationErrors.channel").exists());
+
+    verifyNoInteractions(paymentService);
+  }
+
+  @Test
   void unreadablePaymentBodiesReturnStructuredErrorWithoutCallingService() throws Exception {
     for (String body : List.of("{\"payerVpa\":", "", "[]")) {
       mockMvc.perform(post("/api/payments")

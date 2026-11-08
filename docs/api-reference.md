@@ -57,6 +57,11 @@ Example response:
 }
 ```
 
+`payerVpa`, `payeeVpa`, `currency`, and `channel` must each contain at least one
+non-whitespace character. Empty or whitespace-only values return the structured
+`400 VALIDATION_FAILED` response with field-level `validationErrors`; the payment
+service is not called.
+
 ## Decision Codes
 
 | Code | Status | Meaning |

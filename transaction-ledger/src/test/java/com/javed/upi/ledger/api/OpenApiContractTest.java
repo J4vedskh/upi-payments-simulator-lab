@@ -42,6 +42,10 @@ class OpenApiContractTest {
         List.of("payerVpa", "payeeVpa", "amount", "currency", "channel"));
     assertThat(map(schemas.get("PaymentRequest")))
         .containsEntry("additionalProperties", false);
+    assertNonBlankStringProperties(
+        schemas,
+        "PaymentRequest",
+        List.of("payerVpa", "payeeVpa", "currency", "channel"));
     List<String> paymentResponseFields = List.of(
         "paymentId",
         "payerVpa",
@@ -298,6 +302,19 @@ class OpenApiContractTest {
     assertThat(map(properties.get("amount")))
         .containsEntry("type", "number")
         .doesNotContainKey("format");
+  }
+
+  private static void assertNonBlankStringProperties(
+      Map<String, Object> schemas,
+      String schemaName,
+      List<String> propertyNames) {
+    Map<String, Object> properties = map(map(schemas.get(schemaName)).get("properties"));
+    for (String propertyName : propertyNames) {
+      assertThat(map(properties.get(propertyName)))
+          .containsEntry("type", "string")
+          .containsEntry("minLength", 1)
+          .containsEntry("pattern", ".*\\S.*");
+    }
   }
 
   private static void assertStatusEnum(Map<String, Object> schemas, String schemaName) {
