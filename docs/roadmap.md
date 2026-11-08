@@ -14,6 +14,7 @@ The rolling branch `codex/daily-progress` is intended to make one real improveme
 - [x] Standardize safe structured secure-profile authentication and authorization errors.
 - [x] Reject undeclared fields on both HTTP JSON write contracts.
 - [x] Stabilize public payment and ledger lookup `404` errors.
+- [x] Align the payment request OpenAPI schema with runtime nonblank validation.
 
 ## Near-Term Improvements
 

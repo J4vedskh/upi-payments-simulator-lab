@@ -258,9 +258,13 @@ components:
       properties:
         payerVpa:
           type: string
+          minLength: 1
+          pattern: '.*\S.*'
           example: alice@upi
         payeeVpa:
           type: string
+          minLength: 1
+          pattern: '.*\S.*'
           example: merchant@upi
         amount:
           type: number
@@ -268,9 +272,13 @@ components:
           example: 249.50
         currency:
           type: string
+          minLength: 1
+          pattern: '.*\S.*'
           example: INR
         channel:
           type: string
+          minLength: 1
+          pattern: '.*\S.*'
           example: MOBILE
     PaymentResponse:
       type: object
