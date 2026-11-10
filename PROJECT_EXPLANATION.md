@@ -122,7 +122,9 @@ The engine returns the highest-risk finding first. A blocked finding takes prior
 
 ## Transaction Ledger Service
 
-The transaction ledger records payment events and exposes lookup APIs.
+The transaction ledger retains the first successfully recorded event for each
+payment ID and exposes lookup APIs. Kafka and direct HTTP replays return or retain
+that immutable entry instead of overwriting its decision or recording time.
 
 The controller lives in:
 
@@ -142,17 +144,17 @@ This gives the project an audit-style component: after a payment decision is mad
 
 Both services expose `GET /actuator/prometheus`. The payment service increments
 `upi_payment_decisions_total` after it evaluates and stores a payment decision.
-The ledger increments `upi_ledger_records_total` after each record operation.
+The ledger increments `upi_ledger_records_total` after each first-time entry.
 
 Both counters use exactly one custom label, `status`, with the fixed values
 `accepted`, `review`, and `rejected`. They do not use payment IDs, VPAs, amounts,
 currencies, channels, or decision codes as labels. This keeps the number of time
 series bounded and avoids placing payment details in labels.
 
-The ledger metric counts record operations. If an event with an existing payment
-ID is replayed, the in-memory entry is overwritten and the counter increases again;
-it is not a unique-payment gauge. Each service's counters reset when that service
-restarts; an external Prometheus server can retain historical samples across
+The ledger metric counts unique payment IDs accepted by the current process. If an
+event is replayed, the successfully recorded entry and its `recordedAt` value remain
+unchanged and the counter does not increase. Each service's counters reset when that
+service restarts; an external Prometheus server can retain historical samples across
 restarts.
 
 ## Shared Event Contracts

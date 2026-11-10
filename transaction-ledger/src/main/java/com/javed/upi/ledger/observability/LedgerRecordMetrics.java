@@ -19,7 +19,7 @@ public class LedgerRecordMetrics {
     records = new EnumMap<>(PaymentStatus.class);
     for (PaymentStatus status : PaymentStatus.values()) {
       records.put(status, Counter.builder(METRIC_NAME)
-          .description("Payment events recorded by the transaction ledger.")
+          .description("New ledger entries recorded by the transaction ledger.")
           .tag("status", status.name().toLowerCase(Locale.ROOT))
           .register(meterRegistry));
     }

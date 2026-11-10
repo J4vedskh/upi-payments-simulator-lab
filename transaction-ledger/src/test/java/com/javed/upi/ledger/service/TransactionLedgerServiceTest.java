@@ -2,6 +2,8 @@ package com.javed.upi.ledger.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.javed.upi.events.PaymentEvent;
 import com.javed.upi.events.PaymentStatus;
@@ -36,12 +38,22 @@ class TransactionLedgerServiceTest {
   }
 
   @Test
-  void replayedPaymentOverwritesTheEntryAndCountsBothRecordOperations() {
-    service.record(event("pay_replayed", PaymentStatus.ACCEPTED));
-    service.record(event("pay_replayed", PaymentStatus.REJECTED));
+  void replayedPaymentKeepsTheFirstEntryAndCountsOnlyTheInitialRecord() {
+    Instant firstRecordedAt = Instant.parse("2026-05-27T10:05:00Z");
+    Clock replayClock = mock(Clock.class);
+    when(replayClock.instant())
+        .thenReturn(firstRecordedAt, Instant.parse("2026-05-27T10:10:00Z"));
+    TransactionLedgerService replayService = new TransactionLedgerService(
+        new LedgerRecordMetrics(meterRegistry),
+        replayClock);
 
-    assertEquals(1, service.all().size());
-    assertEquals(PaymentStatus.REJECTED, service.find("pay_replayed").status());
+    LedgerEntry initial = replayService.record(event("pay_replayed", PaymentStatus.ACCEPTED));
+    LedgerEntry replay = replayService.record(event("pay_replayed", PaymentStatus.REJECTED));
+
+    assertEquals(initial, replay);
+    assertEquals(1, replayService.all().size());
+    assertEquals(PaymentStatus.ACCEPTED, replayService.find("pay_replayed").status());
+    assertEquals(firstRecordedAt, replay.recordedAt());
     assertEquals(
         1.0,
         meterRegistry.get(LedgerRecordMetrics.METRIC_NAME)
@@ -49,7 +61,7 @@ class TransactionLedgerServiceTest {
             .counter()
             .count());
     assertEquals(
-        1.0,
+        0.0,
         meterRegistry.get(LedgerRecordMetrics.METRIC_NAME)
             .tag("status", "rejected")
             .counter()

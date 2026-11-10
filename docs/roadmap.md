@@ -6,7 +6,7 @@ The rolling branch `codex/daily-progress` is intended to make one real improveme
 
 - [x] Add an opt-in JWT-secured payment submission profile while preserving the default local behavior.
 - [x] Add validated configurable review and block amount thresholds while preserving the existing defaults.
-- [x] Add bounded Prometheus counters for payment decisions and ledger record operations.
+- [x] Add bounded Prometheus counters for payment decisions and first-time ledger entries.
 - [x] Align the OpenAPI contract with internal ledger ingestion and profile-aware payment authentication.
 - [x] Return a stable structured error for unreadable direct-ledger event requests.
 - [x] Standardize structured unsupported-media errors across both JSON write endpoints.
@@ -15,6 +15,7 @@ The rolling branch `codex/daily-progress` is intended to make one real improveme
 - [x] Reject undeclared fields on both HTTP JSON write contracts.
 - [x] Stabilize public payment and ledger lookup `404` errors.
 - [x] Align the payment request OpenAPI schema with runtime nonblank validation.
+- [x] Make ledger ingestion idempotent by payment ID while retaining the first successfully recorded entry.
 
 ## Near-Term Improvements
 

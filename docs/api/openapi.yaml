@@ -140,7 +140,12 @@ paths:
   /internal/events/payments:
     post:
       summary: Record a payment event directly in the ledger
-      description: Internal local-demo intake that records the same event shape consumed from Kafka. This endpoint is hosted by the ledger service and does not use the payment-service secure profile.
+      description: >-
+        Internal local-demo intake that records the same event shape consumed from
+        Kafka. Ledger ingestion is idempotent by paymentId: the first successful
+        record creates the immutable entry and replays return it unchanged without
+        incrementing the ledger-record counter. This endpoint is hosted by the ledger
+        service and does not use the payment-service secure profile.
       operationId: recordPaymentEvent
       servers:
         - url: http://localhost:8082
@@ -154,7 +159,7 @@ paths:
               $ref: "#/components/schemas/PaymentEvent"
       responses:
         "200":
-          description: Payment event recorded in the ledger
+          description: Successfully recorded ledger entry for the payment ID; replays return the unchanged existing entry
           content:
             application/json:
               schema:
