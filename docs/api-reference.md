@@ -91,6 +91,13 @@ fixed error is `VALIDATION_FAILED`, the message is `Request body is malformed or
 missing a required field.`, and `validationErrors` is empty. Parser details and
 submitted event values are not returned.
 
+Ledger ingestion is idempotent by `paymentId` for both this HTTP endpoint and the
+Kafka consumer. The first successful record creates the entry and fixes its
+`recordedAt` value; later deliveries with the same payment ID return or retain that
+entry and do not increment `upi_ledger_records_total`. This guarantee is
+process-local while the ledger remains in memory, so entries are rebuilt after a
+service restart.
+
 Missing `GET /api/payments/{paymentId}` and `GET /api/ledger/{paymentId}` lookups
 return the stable error code `NOT_FOUND`, fixed messages `Payment not found.` or
 `Ledger entry not found.`, and an empty `validationErrors` object. The `message`
@@ -143,5 +150,5 @@ This makes client behavior predictable and keeps API failures easy to demonstrat
 
 The services expose operational metrics at `GET /actuator/prometheus`. The
 payment service publishes `upi_payment_decisions_total`, and the ledger publishes
-`upi_ledger_records_total`. Each counter uses only the bounded `status` label;
-request identifiers and payment details are excluded.
+`upi_ledger_records_total` for first-time ledger entries. Each counter uses only
+the bounded `status` label; request identifiers and payment details are excluded.

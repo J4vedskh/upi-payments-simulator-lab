@@ -85,7 +85,7 @@ curl http://localhost:8082/actuator/prometheus
 | Metric | Meaning |
 | --- | --- |
 | `upi_payment_decisions_total{status="..."}` | Payment decisions evaluated by the fraud engine |
-| `upi_ledger_records_total{status="..."}` | Ledger record operations, including replayed events that overwrite an existing in-memory entry |
+| `upi_ledger_records_total{status="..."}` | First-time ledger entries; replayed payment IDs retain the successfully recorded entry and do not increment the counter |
 
 The only custom label is `status`, with the fixed values `accepted`, `review`,
 and `rejected`. Payment IDs, VPAs, amounts, currencies, channels, decision codes,
@@ -93,7 +93,8 @@ and request identifiers are deliberately excluded from labels.
 
 Each service's counters reset when that service restarts. An external Prometheus
 server can retain historical samples across restarts. The ledger counter measures
-record operations, not the number of unique entries currently held in memory.
+unique payment IDs accepted by the current in-memory process; its entries also reset
+when the ledger service restarts.
 
 ## Build Docs
 

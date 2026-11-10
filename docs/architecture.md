@@ -24,7 +24,11 @@ flowchart LR
 | `shared-events` | Versioned command and event records shared by services |
 | `fraud-engine` | Pure Java fraud rules with fast unit tests |
 | `payment-service` | REST API for payment submission and fraud decisions |
-| `transaction-ledger` | Records events and exposes payment ledger lookups |
+| `transaction-ledger` | Retains the first successfully recorded event per payment ID and exposes ledger lookups |
+
+The ledger handles at-least-once delivery by treating `paymentId` as its idempotency
+key. Kafka and direct HTTP replays retain the successfully recorded immutable entry
+and its recording time.
 
 ## Fraud Decision Flow
 

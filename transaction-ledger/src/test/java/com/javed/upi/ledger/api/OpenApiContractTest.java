@@ -24,12 +24,16 @@ class OpenApiContractTest {
 
     Map<String, Object> intake = operation(paths, "/internal/events/payments", "post");
     assertThat(intake.get("operationId")).isEqualTo("recordPaymentEvent");
+    assertThat(String.valueOf(intake.get("description")))
+        .contains("idempotent by paymentId", "first successful", "replays return it unchanged");
     assertThat(serverUrls(intake)).containsExactly(LEDGER_SERVICE);
     assertThat(list(intake.get("security"))).isEmpty();
     assertThat(schemaReference(intake, "requestBody"))
         .isEqualTo("#/components/schemas/PaymentEvent");
     assertThat(responseSchemaReference(intake, "200"))
         .isEqualTo("#/components/schemas/LedgerEntry");
+    assertThat(String.valueOf(map(map(intake.get("responses")).get("200")).get("description")))
+        .contains("Successfully recorded ledger entry", "replays");
     assertThat(responseSchemaReference(intake, "400"))
         .isEqualTo("#/components/schemas/ErrorResponse");
     assertInvalidEventExample(intake);

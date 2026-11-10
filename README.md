@@ -14,7 +14,7 @@ Project deep dive: [PROJECT_EXPLANATION.md](PROJECT_EXPLANATION.md)
 | Security | Default permit-all behavior plus an opt-in JWT resource-server profile for payment writes |
 | Eventing | Kafka profile for payment events, local in-memory publisher for tests |
 | Fraud logic | Rule-based approval, review, and rejection decisions |
-| Ledger | Transaction ledger service that records payment events |
+| Ledger | Idempotent transaction ledger that retains the first successfully recorded event per payment ID |
 | Observability | Prometheus counters with bounded payment-status labels |
 | Platform | Dockerfiles, Docker Compose, Kubernetes starter manifests |
 | Delivery | GitHub Actions CI and GitHub Pages documentation |
@@ -77,9 +77,11 @@ curl http://localhost:8082/actuator/prometheus
 ```
 
 `upi_payment_decisions_total` counts payment decisions by `status`, and
-`upi_ledger_records_total` counts ledger record operations by `status`. The only
-custom label is the bounded `status` value: `accepted`, `review`, or `rejected`.
-Payment IDs, VPAs, amounts, and other request values are not used as labels.
+`upi_ledger_records_total` counts first-time ledger entries by `status`. Replayed
+payment IDs return the successfully recorded immutable entry without incrementing
+the ledger counter. The only custom label is the bounded `status` value: `accepted`,
+`review`, or `rejected`. Payment IDs, VPAs, amounts, and other request values are not
+used as labels.
 
 ### Opt-in secure profile
 

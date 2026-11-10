@@ -6,8 +6,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -17,7 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class TransactionLedgerService {
   private final Clock clock;
   private final LedgerRecordMetrics recordMetrics;
-  private final Map<String, LedgerEntry> entries = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, LedgerEntry> entries = new ConcurrentHashMap<>();
 
   @Autowired
   public TransactionLedgerService(LedgerRecordMetrics recordMetrics) {
@@ -31,7 +31,10 @@ public class TransactionLedgerService {
 
   public LedgerEntry record(PaymentEvent event) {
     LedgerEntry entry = LedgerEntry.from(event, Instant.now(clock));
-    entries.put(entry.paymentId(), entry);
+    LedgerEntry existing = entries.putIfAbsent(entry.paymentId(), entry);
+    if (existing != null) {
+      return existing;
+    }
     recordMetrics.record(entry.status());
     return entry;
   }
