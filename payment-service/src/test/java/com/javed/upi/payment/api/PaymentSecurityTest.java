@@ -75,6 +75,10 @@ class PaymentSecurityTest {
     assertStructuredUnauthorized(post("/api/payments")
         .contentType(MediaType.APPLICATION_JSON)
         .content(PAYMENT_REQUEST_WITH_UNKNOWN_FIELD));
+    assertStructuredUnauthorized(post("/api/payments")
+        .header("Idempotency-Key", "bad key")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(VALID_PAYMENT_REQUEST));
 
     verifyNoInteractions(paymentService);
   }

@@ -23,7 +23,7 @@ flowchart LR
 | --- | --- |
 | `shared-events` | Versioned command and event records shared by services |
 | `fraud-engine` | Pure Java fraud rules with fast unit tests |
-| `payment-service` | REST API for payment submission and fraud decisions |
+| `payment-service` | REST API with optional retry idempotency and fraud decisions |
 | `transaction-ledger` | Retains the first successfully recorded event per payment ID and exposes ledger lookups |
 
 The ledger handles at-least-once delivery by treating `paymentId` as its idempotency
@@ -40,13 +40,20 @@ sequenceDiagram
   participant K as Kafka/Event Publisher
   participant L as Ledger
 
-  C->>P: POST /api/payments
+  C->>P: POST /api/payments (optional Idempotency-Key)
+  P->>P: hash key and normalized request fingerprint
   P->>F: evaluate PaymentCommand
   F-->>P: APPROVED, REVIEW, or BLOCKED
   P->>K: publish PaymentEvent
   K-->>L: consume PaymentEvent
   C-->>P: paymentId and decision
 ```
+
+For a key's first successful submission, the payment service stores only the
+SHA-256 key and request-fingerprint hashes with the response. Equivalent retries
+return that response before fraud evaluation or event publication; conflicting key
+reuse returns a fixed `409`. This protection is local to one process until the
+PostgreSQL persistence milestone.
 
 ## Profiles
 

@@ -13,13 +13,20 @@ paths:
     post:
       summary: Submit a UPI-style payment command
       operationId: submitPayment
-      description: The default profile accepts anonymous requests. The opt-in secure profile requires an HS256 bearer token with payment.write in the scope claim.
+      description: >-
+        The default profile accepts anonymous requests. The opt-in secure profile
+        requires an HS256 bearer token with payment.write in the scope claim. An
+        optional Idempotency-Key deduplicates retries within one process after the
+        initial keyed request returns 202, returning the original decision when the
+        normalized payment request is equivalent.
       servers:
         - url: http://localhost:8081
           description: Payment Service
       security:
         - {}
         - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
       requestBody:
         required: true
         content:
@@ -28,13 +35,13 @@ paths:
               $ref: "#/components/schemas/PaymentRequest"
       responses:
         "202":
-          description: Payment decision accepted for processing
+          description: Payment decision accepted; an equivalent keyed replay returns the original decision
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/PaymentResponse"
         "400":
-          description: Request validation failed, JSON body could not be read, or an undeclared field was supplied
+          description: Request validation failed, JSON body could not be read, an undeclared field was supplied, or Idempotency-Key was invalid
           content:
             application/json:
               schema:
@@ -59,6 +66,28 @@ paths:
                     message: Request body is malformed.
                     path: /api/payments
                     validationErrors: {}
+                invalidIdempotencyKey:
+                  summary: Idempotency-Key failed bounded visible-ASCII validation
+                  value:
+                    timestamp: "2026-11-11T05:00:00Z"
+                    status: 400
+                    error: VALIDATION_FAILED
+                    message: Idempotency-Key must contain 1 to 128 visible ASCII characters.
+                    path: /api/payments
+                    validationErrors: {}
+        "409":
+          description: Idempotency-Key was reused for different normalized payment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                timestamp: "2026-11-11T05:00:00Z"
+                status: 409
+                error: IDEMPOTENCY_CONFLICT
+                message: Idempotency-Key was already used for a different payment request.
+                path: /api/payments
+                validationErrors: {}
         "415":
           description: Request Content-Type is not supported after any required authentication succeeds
           content:
@@ -243,6 +272,21 @@ components:
       bearerFormat: JWT
       description: The secure profile accepts HS256 JWTs with payment.write in the scope claim.
   parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: >-
+        Opaque retry key. Values must contain 1 to 128 visible ASCII characters.
+        The raw key is represented only by a SHA-256 hash; the cache also retains the
+        original payment response. Replay state resets when the payment-service
+        process restarts.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+        pattern: '^[!-~]+$'
+        example: retry-8f735e19-53a7-4af8-aad1-2a61a392674d
     PaymentId:
       name: paymentId
       in: path

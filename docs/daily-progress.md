@@ -37,6 +37,7 @@ Every run should report:
 
 | Date | Improvement | Verification |
 | --- | --- | --- |
+| 2026-11-11 | Added optional hashed payment-submission idempotency so equivalent retries reuse one decision and conflicting key reuse fails safely. | Focused service, controller, security, and parsed contract tests: 27 passed; `mvn -o -T 1C clean test` passed: 49 tests; `mkdocs build --strict` passed |
 | 2026-11-10 | Made ledger ingestion idempotent by payment ID so Kafka and direct HTTP replays retain the first successfully recorded entry and do not inflate record metrics. | Focused service and parsed contract tests; `mvn -o -T 1C clean test` passed: 41 tests; `mkdocs build --strict` passed |
 | 2026-11-08 | Aligned the payment request OpenAPI schema with runtime nonblank validation for all four string fields. | Focused runtime and parsed contract tests; `mvn -o -T 1C clean test` passed: 41 tests; `mkdocs build --strict` passed |
 | 2026-11-07 | Stabilized payment and ledger lookup `404` responses with fixed messages and symbolic error codes while retaining the request URI path. | Focused service/controller and parsed contract tests; `mvn -o -T 1C clean test` passed: 40 tests; `mkdocs build --strict` passed |
