@@ -101,7 +101,8 @@ class OpenApiContractTest {
     Map<String, Object> submitPayment = operation(paths, "/api/payments", "post");
     assertThat(serverUrls(submitPayment)).containsExactly(PAYMENT_SERVICE);
     assertThat(String.valueOf(submitPayment.get("description")))
-        .contains("default profile", "secure profile", "payment.write");
+        .contains("default profile", "secure profile", "payment.write", "Idempotency-Key");
+    assertIdempotencyKeyParameter(document, submitPayment);
     List<Object> security = list(submitPayment.get("security"));
     assertThat(security).hasSize(2);
     assertThat(map(security.get(0))).isEmpty();
@@ -117,6 +118,7 @@ class OpenApiContractTest {
         "FORBIDDEN",
         "Access is denied.");
     assertPaymentBadRequestExamples(submitPayment);
+    assertIdempotencyConflictExample(submitPayment);
     assertUnsupportedMediaTypeExample(submitPayment, "/api/payments");
 
     Map<String, Object> securitySchemes = map(map(document.get("components"))
@@ -185,7 +187,8 @@ class OpenApiContractTest {
     Map<String, Object> content = map(response.get("content"));
     assertThat(content).containsOnlyKeys("application/json");
     Map<String, Object> examples = map(map(content.get("application/json")).get("examples"));
-    assertThat(examples).containsOnlyKeys("fieldValidation", "malformedBody");
+    assertThat(examples)
+        .containsOnlyKeys("fieldValidation", "malformedBody", "invalidIdempotencyKey");
 
     Map<String, Object> fieldValidation = map(map(examples.get("fieldValidation")).get("value"));
     assertThat(fieldValidation)
@@ -208,6 +211,57 @@ class OpenApiContractTest {
         .containsEntry("message", "Request body is malformed.")
         .containsEntry("path", "/api/payments");
     assertThat(map(malformedBody.get("validationErrors"))).isEmpty();
+
+    Map<String, Object> invalidKey = map(map(examples.get("invalidIdempotencyKey")).get("value"));
+    assertThat(invalidKey)
+        .containsOnlyKeys("timestamp", "status", "error", "message", "path", "validationErrors")
+        .containsEntry("timestamp", "2026-11-11T05:00:00Z")
+        .containsEntry("status", 400)
+        .containsEntry("error", "VALIDATION_FAILED")
+        .containsEntry(
+            "message",
+            "Idempotency-Key must contain 1 to 128 visible ASCII characters.")
+        .containsEntry("path", "/api/payments");
+    assertThat(map(invalidKey.get("validationErrors"))).isEmpty();
+  }
+
+  private static void assertIdempotencyKeyParameter(
+      Map<String, Object> document,
+      Map<String, Object> submitPayment) {
+    List<Object> parameters = list(submitPayment.get("parameters"));
+    assertThat(parameters).singleElement().satisfies(parameter -> assertThat(map(parameter))
+        .containsEntry("$ref", "#/components/parameters/IdempotencyKey"));
+
+    Map<String, Object> components = map(document.get("components"));
+    Map<String, Object> parameter = map(map(components.get("parameters")).get("IdempotencyKey"));
+    assertThat(parameter)
+        .containsEntry("name", "Idempotency-Key")
+        .containsEntry("in", "header")
+        .containsEntry("required", false);
+    assertThat(map(parameter.get("schema")))
+        .containsEntry("type", "string")
+        .containsEntry("minLength", 1)
+        .containsEntry("maxLength", 128)
+        .containsEntry("pattern", "^[!-~]+$");
+  }
+
+  private static void assertIdempotencyConflictExample(Map<String, Object> submitPayment) {
+    assertThat(responseSchemaReference(submitPayment, "409"))
+        .isEqualTo("#/components/schemas/ErrorResponse");
+    Map<String, Object> response = map(map(submitPayment.get("responses")).get("409"));
+    Map<String, Object> content = map(response.get("content"));
+    assertThat(content).containsOnlyKeys("application/json");
+    Map<String, Object> example = map(map(content.get("application/json")).get("example"));
+    assertThat(example)
+        .containsOnlyKeys("timestamp", "status", "error", "message", "path", "validationErrors")
+        .containsEntry("timestamp", "2026-11-11T05:00:00Z")
+        .containsEntry("status", 409)
+        .containsEntry("error", "IDEMPOTENCY_CONFLICT")
+        .containsEntry(
+            "message",
+            "Idempotency-Key was already used for a different payment request.")
+        .containsEntry("path", "/api/payments");
+    assertThat(map(example.get("validationErrors"))).isEmpty();
   }
 
   private static void assertSecurePaymentErrorExample(

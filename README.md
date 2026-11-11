@@ -45,9 +45,25 @@ Submit a payment:
 
 ```bash
 curl -X POST http://localhost:8081/api/payments \
+  -H "Idempotency-Key: demo-payment-001" \
   -H "Content-Type: application/json" \
   -d "{\"payerVpa\":\"alice@upi\",\"payeeVpa\":\"merchant@upi\",\"amount\":249.50,\"currency\":\"INR\",\"channel\":\"MOBILE\"}"
 ```
+
+### Retry payment submission safely
+
+`Idempotency-Key` is optional, so clients that omit it keep the existing
+new-payment behavior. A key must contain 1 to 128 visible ASCII characters. After
+an initial keyed submission returns `202`, an equivalent retry returns the original
+payment decision without running fraud rules again, incrementing decision metrics,
+or publishing another event. Reusing the key for different normalized payment
+details returns the fixed `409 IDEMPOTENCY_CONFLICT` response.
+
+The cache stores SHA-256 hashes of the key and normalized request fingerprint plus
+the original payment response; it does not retain or echo the raw key. Replay state
+is local to one running payment service and resets on restart, so cross-instance
+durability remains part of the PostgreSQL roadmap. A synchronous publication
+failure before the initial `202` is returned is not cached as a successful result.
 
 ### Configure fraud thresholds
 

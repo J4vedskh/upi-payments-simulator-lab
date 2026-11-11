@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,8 +21,10 @@ public class PaymentController {
   }
 
   @PostMapping
-  public ResponseEntity<PaymentResponse> submit(@Valid @RequestBody PaymentRequest request) {
-    return ResponseEntity.accepted().body(paymentService.submit(request));
+  public ResponseEntity<PaymentResponse> submit(
+      @RequestHeader(name = "Idempotency-Key", required = false) String idempotencyKey,
+      @Valid @RequestBody PaymentRequest request) {
+    return ResponseEntity.accepted().body(paymentService.submit(request, idempotencyKey));
   }
 
   @GetMapping("/{paymentId}")

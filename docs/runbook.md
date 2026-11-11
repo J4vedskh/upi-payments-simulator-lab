@@ -15,6 +15,26 @@ mvn -pl payment-service spring-boot:run
 mvn -pl transaction-ledger spring-boot:run
 ```
 
+## Retry Payment Submission Safely
+
+Clients may attach an optional bounded retry key:
+
+```bash
+curl -X POST http://localhost:8081/api/payments \
+  -H "Idempotency-Key: demo-payment-001" \
+  -H "Content-Type: application/json" \
+  -d "{\"payerVpa\":\"alice@upi\",\"payeeVpa\":\"merchant@upi\",\"amount\":249.50,\"currency\":\"INR\",\"channel\":\"MOBILE\"}"
+```
+
+Keys must contain 1 to 128 visible ASCII characters. After the first keyed request
+returns `202`, repeat the same normalized request with that key to receive the
+original decision without another event or metric increment. Different payment
+details for that key return `409 IDEMPOTENCY_CONFLICT`. The cache retains the
+original response and SHA-256 hashes of the key and request fingerprint; the raw key
+is not retained. Cache state resets on process restart and is not a replacement for
+the planned database-backed implementation. A synchronous publication failure
+before the initial `202` is not cached as successful.
+
 ## Configure Fraud Thresholds
 
 The payment service uses these defaults:
@@ -84,7 +104,7 @@ curl http://localhost:8082/actuator/prometheus
 
 | Metric | Meaning |
 | --- | --- |
-| `upi_payment_decisions_total{status="..."}` | Payment decisions evaluated by the fraud engine |
+| `upi_payment_decisions_total{status="..."}` | New payment decisions evaluated by the fraud engine; equivalent keyed retries do not increment it |
 | `upi_ledger_records_total{status="..."}` | First-time ledger entries; replayed payment IDs retain the successfully recorded entry and do not increment the counter |
 
 The only custom label is `status`, with the fixed values `accepted`, `review`,

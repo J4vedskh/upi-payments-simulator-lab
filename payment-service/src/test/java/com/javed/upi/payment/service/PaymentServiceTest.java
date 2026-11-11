@@ -1,7 +1,9 @@
 package com.javed.upi.payment.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.javed.upi.events.PaymentEvent;
 import com.javed.upi.events.PaymentStatus;
@@ -17,6 +19,12 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -36,7 +44,7 @@ class PaymentServiceTest {
         "merchant@upi",
         new BigDecimal("249.50"),
         "inr",
-        "mobile"));
+        "mobile"), null);
 
     assertEquals(PaymentStatus.ACCEPTED, response.status());
     assertEquals(response.paymentId(), service.find(response.paymentId()).paymentId());
@@ -52,7 +60,7 @@ class PaymentServiceTest {
         "alice@upi",
         new BigDecimal("100.00"),
         "INR",
-        "MOBILE"));
+        "MOBILE"), null);
 
     assertEquals(PaymentStatus.REJECTED, response.status());
     assertEquals("SELF_TRANSFER", response.decisionCode());
@@ -67,10 +75,131 @@ class PaymentServiceTest {
         "merchant@upi",
         new BigDecimal("50000.00"),
         "INR",
-        "MOBILE"));
+        "MOBILE"), null);
 
     assertEquals(PaymentStatus.REVIEW, response.status());
     assertEquals(1.0, decisionCount(PaymentStatus.REVIEW));
+  }
+
+  @Test
+  void equivalentRetryReturnsTheOriginalDecisionWithoutRepublishing() {
+    PaymentResponse initial = service.submit(new PaymentRequest(
+        "alice@upi",
+        "merchant@upi",
+        new BigDecimal("249.50"),
+        "inr",
+        "mobile"), "retry-key-123");
+
+    PaymentResponse replay = service.submit(new PaymentRequest(
+        "alice@upi",
+        "merchant@upi",
+        new BigDecimal("249.500"),
+        "INR",
+        "MOBILE"), "retry-key-123");
+
+    assertEquals(initial, replay);
+    assertEquals(1, publisher.events.size());
+    assertEquals(1.0, decisionCount(PaymentStatus.ACCEPTED));
+  }
+
+  @Test
+  void requestsWithoutAnIdempotencyKeyRemainIndependent() {
+    PaymentRequest request = new PaymentRequest(
+        "alice@upi",
+        "merchant@upi",
+        new BigDecimal("249.50"),
+        "INR",
+        "MOBILE");
+
+    PaymentResponse first = service.submit(request, null);
+    PaymentResponse second = service.submit(request, null);
+
+    assertNotEquals(first.paymentId(), second.paymentId());
+    assertEquals(2, publisher.events.size());
+    assertEquals(2.0, decisionCount(PaymentStatus.ACCEPTED));
+  }
+
+  @Test
+  void concurrentEquivalentRetriesPublishOnlyOnePayment() throws Exception {
+    BlockingPublisher blockingPublisher = new BlockingPublisher();
+    SimpleMeterRegistry concurrentRegistry = new SimpleMeterRegistry();
+    PaymentService concurrentService = new PaymentService(
+        FraudEngine.defaultEngine(),
+        blockingPublisher,
+        new PaymentDecisionMetrics(concurrentRegistry),
+        Clock.fixed(Instant.parse("2026-05-27T10:00:00Z"), ZoneOffset.UTC));
+    PaymentRequest request = new PaymentRequest(
+        "alice@upi",
+        "merchant@upi",
+        new BigDecimal("249.50"),
+        "INR",
+        "MOBILE");
+    ExecutorService executor = Executors.newFixedThreadPool(2);
+
+    try {
+      Future<PaymentResponse> first = executor.submit(
+          () -> concurrentService.submit(request, "concurrent-retry-key"));
+      assertTrue(blockingPublisher.publishStarted.await(5, TimeUnit.SECONDS));
+      Future<PaymentResponse> second = executor.submit(
+          () -> concurrentService.submit(request, "concurrent-retry-key"));
+
+      blockingPublisher.releasePublish.countDown();
+
+      assertEquals(first.get(5, TimeUnit.SECONDS), second.get(5, TimeUnit.SECONDS));
+      assertEquals(1, blockingPublisher.publishCount.get());
+      assertEquals(
+          1.0,
+          concurrentRegistry.get(PaymentDecisionMetrics.METRIC_NAME)
+              .tag("status", "accepted")
+              .counter()
+              .count());
+    } finally {
+      blockingPublisher.releasePublish.countDown();
+      executor.shutdownNow();
+    }
+  }
+
+  @Test
+  void changedRequestForAnExistingKeyReturnsAConflictWithoutSideEffects() {
+    service.submit(new PaymentRequest(
+        "alice@upi",
+        "merchant@upi",
+        new BigDecimal("249.50"),
+        "INR",
+        "MOBILE"), "retry-key-456");
+
+    PaymentIdempotencyException exception = assertThrows(
+        PaymentIdempotencyException.class,
+        () -> service.submit(new PaymentRequest(
+            "alice@upi",
+            "merchant@upi",
+            new BigDecimal("250.00"),
+            "INR",
+            "MOBILE"), "retry-key-456"));
+
+    assertEquals(PaymentIdempotencyException.Reason.CONFLICT, exception.reason());
+    assertEquals(1, publisher.events.size());
+    assertEquals(1.0, decisionCount(PaymentStatus.ACCEPTED));
+  }
+
+  @Test
+  void invalidIdempotencyKeysAreRejectedBeforePaymentSideEffects() {
+    PaymentRequest request = new PaymentRequest(
+        "alice@upi",
+        "merchant@upi",
+        new BigDecimal("249.50"),
+        "INR",
+        "MOBILE");
+
+    for (String key : List.of(" ", "bad key", "x".repeat(129), "bad\u007fkey")) {
+      PaymentIdempotencyException exception = assertThrows(
+          PaymentIdempotencyException.class,
+          () -> service.submit(request, key));
+      assertEquals(PaymentIdempotencyException.Reason.INVALID_KEY, exception.reason());
+    }
+
+    assertEquals(0, publisher.events.size());
+    assertEquals(0.0, decisionCount(PaymentStatus.ACCEPTED));
   }
 
   @Test
@@ -96,6 +225,27 @@ class PaymentServiceTest {
     @Override
     public void publish(PaymentEvent event) {
       events.add(event);
+    }
+  }
+
+  private static final class BlockingPublisher implements PaymentEventPublisher {
+    private final CountDownLatch publishStarted = new CountDownLatch(1);
+    private final CountDownLatch releasePublish = new CountDownLatch(1);
+    private final AtomicInteger publishCount = new AtomicInteger();
+
+    @Override
+    public void publish(PaymentEvent event) {
+      publishCount.incrementAndGet();
+      publishStarted.countDown();
+      try {
+        if (!releasePublish.await(5, TimeUnit.SECONDS)) {
+          throw new IllegalStateException("Timed out waiting to release the test publisher.");
+        }
+      } catch (InterruptedException exception) {
+        Thread.currentThread().interrupt();
+        throw new IllegalStateException(
+            "Interrupted while waiting to release the test publisher.", exception);
+      }
     }
   }
 }

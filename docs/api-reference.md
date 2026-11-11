@@ -31,6 +31,7 @@ error metadata. The signing key is supplied at runtime through
 POST /api/payments
 Content-Type: application/json
 Authorization: Bearer <signed-jwt>  # required only with the secure profile
+Idempotency-Key: retry-8f735e19-53a7-4af8-aad1-2a61a392674d  # optional
 
 {
   "payerVpa": "alice@upi",
@@ -61,6 +62,26 @@ Example response:
 non-whitespace character. Empty or whitespace-only values return the structured
 `400 VALIDATION_FAILED` response with field-level `validationErrors`; the payment
 service is not called.
+
+`Idempotency-Key` accepts 1 to 128 visible ASCII characters. When it is absent,
+every valid submission creates a new payment as before. When it is present, the
+service hashes the key and a normalized request fingerprint. The fingerprint keeps
+VPAs exact, compares amounts numerically, and normalizes currency and channel to
+uppercase. After the initial keyed submission returns `202`, an equivalent retry
+returns that response without another fraud decision, decision metric increment,
+or event publication. Reusing the same key for different normalized details returns
+`409` with error
+`IDEMPOTENCY_CONFLICT`, fixed message `Idempotency-Key was already used for a
+different payment request.`, and an empty `validationErrors` object. Error bodies
+never echo the supplied key.
+
+The cache retains the original payment response but stores only SHA-256 hashes for
+the key and normalized request fingerprint. It is process-local, resets when the
+payment service restarts, and does not coordinate multiple replicas. Durable
+cross-instance idempotency belongs to the PostgreSQL persistence roadmap item. A
+synchronous event-publication failure before the initial `202` is returned is not
+cached as a successful result. With the secure profile, authentication and
+`payment.write` authorization still occur before header or body processing.
 
 ## Decision Codes
 

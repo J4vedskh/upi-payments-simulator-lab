@@ -1,6 +1,10 @@
 package com.javed.upi.payment.api;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -13,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.javed.upi.events.PaymentStatus;
 import com.javed.upi.payment.security.PaymentSecurityConfiguration;
+import com.javed.upi.payment.service.PaymentIdempotencyException;
 import com.javed.upi.payment.service.PaymentService;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -52,7 +57,7 @@ class PaymentControllerTest {
         "Payment passed all configured fraud checks.",
         Instant.parse("2026-05-27T10:00:00Z"));
 
-    when(paymentService.submit(any(PaymentRequest.class))).thenReturn(response);
+    when(paymentService.submit(any(PaymentRequest.class), isNull())).thenReturn(response);
 
     mockMvc.perform(post("/api/payments")
             .contentType(MediaType.APPLICATION_JSON)
@@ -67,7 +72,84 @@ class PaymentControllerTest {
         .andExpect(jsonPath("$.status").value("ACCEPTED"))
         .andExpect(jsonPath("$.decisionCode").value("APPROVED"));
 
-    verify(paymentService).submit(any(PaymentRequest.class));
+    verify(paymentService).submit(any(PaymentRequest.class), isNull());
+  }
+
+  @Test
+  void idempotencyKeyIsForwardedToThePaymentService() throws Exception {
+    PaymentResponse response = new PaymentResponse(
+        "pay_123",
+        "alice@upi",
+        "merchant@upi",
+        new BigDecimal("249.50"),
+        "INR",
+        PaymentStatus.ACCEPTED,
+        "APPROVED",
+        "Payment passed all configured fraud checks.",
+        Instant.parse("2026-05-27T10:00:00Z"));
+    when(paymentService.submit(any(PaymentRequest.class), eq("retry-key-123")))
+        .thenReturn(response);
+
+    mockMvc.perform(post("/api/payments")
+            .header("Idempotency-Key", "retry-key-123")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(new PaymentRequest(
+                "alice@upi",
+                "merchant@upi",
+                new BigDecimal("249.50"),
+                "INR",
+                "MOBILE"))))
+        .andExpect(status().isAccepted())
+        .andExpect(jsonPath("$.paymentId").value("pay_123"));
+
+    verify(paymentService).submit(any(PaymentRequest.class), eq("retry-key-123"));
+  }
+
+  @Test
+  void conflictingIdempotencyKeyReturnsStableConflictWithoutEchoingTheKey() throws Exception {
+    when(paymentService.submit(any(PaymentRequest.class), eq("private-retry-key")))
+        .thenThrow(PaymentIdempotencyException.conflict());
+
+    mockMvc.perform(post("/api/payments")
+            .header("Idempotency-Key", "private-retry-key")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(new PaymentRequest(
+                "alice@upi",
+                "merchant@upi",
+                new BigDecimal("250.00"),
+                "INR",
+                "MOBILE"))))
+        .andExpect(status().isConflict())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.error").value("IDEMPOTENCY_CONFLICT"))
+        .andExpect(jsonPath("$.message")
+            .value("Idempotency-Key was already used for a different payment request."))
+        .andExpect(jsonPath("$.path").value("/api/payments"))
+        .andExpect(jsonPath("$.validationErrors").isEmpty())
+        .andExpect(content().string(not(containsString("private-retry-key"))));
+  }
+
+  @Test
+  void invalidIdempotencyKeyReturnsStableValidationError() throws Exception {
+    when(paymentService.submit(any(PaymentRequest.class), eq("bad key")))
+        .thenThrow(PaymentIdempotencyException.invalidKey());
+
+    mockMvc.perform(post("/api/payments")
+            .header("Idempotency-Key", "bad key")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(new PaymentRequest(
+                "alice@upi",
+                "merchant@upi",
+                new BigDecimal("249.50"),
+                "INR",
+                "MOBILE"))))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.error").value("VALIDATION_FAILED"))
+        .andExpect(jsonPath("$.message")
+            .value("Idempotency-Key must contain 1 to 128 visible ASCII characters."))
+        .andExpect(jsonPath("$.path").value("/api/payments"))
+        .andExpect(jsonPath("$.validationErrors").isEmpty());
   }
 
   @Test

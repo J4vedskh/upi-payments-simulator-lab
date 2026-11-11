@@ -1,5 +1,6 @@
 package com.javed.upi.payment.api;
 
+import com.javed.upi.payment.service.PaymentIdempotencyException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -15,6 +16,21 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class PaymentApiExceptionHandler {
+
+  @ExceptionHandler(PaymentIdempotencyException.class)
+  ResponseEntity<ApiErrorResponse> handleIdempotency(
+      PaymentIdempotencyException exception,
+      HttpServletRequest request) {
+    boolean conflict = exception.reason() == PaymentIdempotencyException.Reason.CONFLICT;
+    HttpStatus status = conflict ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST;
+    String error = conflict ? "IDEMPOTENCY_CONFLICT" : "VALIDATION_FAILED";
+    return ResponseEntity.status(status).body(ApiErrorResponse.of(
+        status.value(),
+        error,
+        exception.getMessage(),
+        request.getRequestURI(),
+        Map.of()));
+  }
 
   @ExceptionHandler(HttpMessageNotReadableException.class)
   ResponseEntity<ApiErrorResponse> handleUnreadableBody(HttpServletRequest request) {

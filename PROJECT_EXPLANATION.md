@@ -45,7 +45,7 @@ The project is a Java 17 Maven multi-module repository. The parent Maven file de
 | --- | --- |
 | `shared-events` | Shared payment command and event records used across services |
 | `fraud-engine` | Pure Java fraud rules and decision logic |
-| `payment-service` | Spring Boot REST API for submitting and querying payments |
+| `payment-service` | Spring Boot REST API for idempotent submission and payment queries |
 | `transaction-ledger` | Spring Boot service that records and exposes ledger entries |
 
 ## Payment Service
@@ -56,7 +56,7 @@ Main API endpoints:
 
 | Endpoint | Purpose |
 | --- | --- |
-| `POST /api/payments` | Submit a new payment command |
+| `POST /api/payments` | Submit a payment command with an optional `Idempotency-Key` |
 | `GET /api/payments/{paymentId}` | Fetch a payment decision by payment ID |
 
 The controller lives in:
@@ -69,16 +69,23 @@ The main business flow lives in:
 
 When a payment is submitted, `PaymentService`:
 
-1. Creates a unique payment ID.
-2. Normalizes the currency and channel.
-3. Builds a `PaymentCommand`.
-4. Sends the command to the fraud engine.
-5. Converts the fraud decision into a payment status.
-6. Creates a `PaymentEvent`.
-7. Stores the event in memory.
-8. Increments the bounded decision counter for the event status.
-9. Publishes the event.
+1. Validates and hashes an optional bounded `Idempotency-Key`.
+2. Hashes a normalized request fingerprint.
+3. After a successful initial `202`, returns the original response immediately for
+   an equivalent keyed retry.
+4. Rejects different details for an existing key with a fixed `409` conflict.
+5. Creates a unique payment ID for a new submission.
+6. Normalizes the currency and channel.
+7. Builds a `PaymentCommand` and sends it to the fraud engine.
+8. Creates and stores the resulting `PaymentEvent` in memory.
+9. Increments the bounded decision counter and publishes the event.
 10. Returns a `PaymentResponse` to the caller.
+
+The idempotency cache retains the original payment response and SHA-256 hashes of
+the key and request fingerprint; it does not retain the raw key. It is local to one
+running payment service and resets on restart, so durable cross-instance replay
+protection remains part of the PostgreSQL roadmap. A synchronous publication
+failure before the initial `202` is returned is not cached as successful.
 
 ## Fraud Engine
 
