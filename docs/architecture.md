@@ -55,6 +55,10 @@ return that response before fraud evaluation or event publication; conflicting k
 reuse returns a fixed `409`. This protection is local to one process until the
 PostgreSQL persistence milestone.
 
+The replay cache is bounded and expires entries from their initial successful
+write; cache hits do not extend retention. Capacity eviction, expiry, or process
+restart makes a later use of that key a new submission.
+
 ## Profiles
 
 | Profile | Behavior |

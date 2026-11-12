@@ -238,6 +238,8 @@ class OpenApiContractTest {
         .containsEntry("name", "Idempotency-Key")
         .containsEntry("in", "header")
         .containsEntry("required", false);
+    assertThat(String.valueOf(parameter.get("description")))
+        .contains("bounded", "retention window", "does not extend", "new submission");
     assertThat(map(parameter.get("schema")))
         .containsEntry("type", "string")
         .containsEntry("minLength", 1)

@@ -17,6 +17,7 @@ The rolling branch `codex/daily-progress` is intended to make one real improveme
 - [x] Align the payment request OpenAPI schema with runtime nonblank validation.
 - [x] Make ledger ingestion idempotent by payment ID while retaining the first successfully recorded entry.
 - [x] Add optional hashed payment-submission idempotency with safe conflict handling.
+- [x] Bound payment idempotency retention by configurable capacity and write-time expiry.
 
 ## Near-Term Improvements
 

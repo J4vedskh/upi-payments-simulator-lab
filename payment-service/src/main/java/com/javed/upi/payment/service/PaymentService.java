@@ -19,7 +19,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -33,27 +32,29 @@ public class PaymentService {
   private final PaymentEventPublisher eventPublisher;
   private final PaymentDecisionMetrics decisionMetrics;
   private final Clock clock;
+  private final PaymentIdempotencyStore idempotencyStore;
   private final Map<String, PaymentEvent> payments = new ConcurrentHashMap<>();
-  private final ConcurrentMap<String, IdempotencyRecord> idempotencyRecords =
-      new ConcurrentHashMap<>();
 
   @Autowired
   public PaymentService(
       FraudEngine fraudEngine,
       PaymentEventPublisher eventPublisher,
-      PaymentDecisionMetrics decisionMetrics) {
-    this(fraudEngine, eventPublisher, decisionMetrics, Clock.systemUTC());
+      PaymentDecisionMetrics decisionMetrics,
+      PaymentIdempotencyStore idempotencyStore) {
+    this(fraudEngine, eventPublisher, decisionMetrics, Clock.systemUTC(), idempotencyStore);
   }
 
   PaymentService(
       FraudEngine fraudEngine,
       PaymentEventPublisher eventPublisher,
       PaymentDecisionMetrics decisionMetrics,
-      Clock clock) {
+      Clock clock,
+      PaymentIdempotencyStore idempotencyStore) {
     this.fraudEngine = fraudEngine;
     this.eventPublisher = eventPublisher;
     this.decisionMetrics = decisionMetrics;
     this.clock = clock;
+    this.idempotencyStore = idempotencyStore;
   }
 
   public PaymentResponse submit(PaymentRequest request, String idempotencyKey) {
@@ -64,16 +65,10 @@ public class PaymentService {
 
     String keyHash = sha256(validatedKey);
     String requestFingerprint = requestFingerprint(request);
-    IdempotencyRecord record = idempotencyRecords.compute(keyHash, (ignored, existing) -> {
-      if (existing == null) {
-        return new IdempotencyRecord(requestFingerprint, processNewPayment(request));
-      }
-      if (!existing.requestFingerprint().equals(requestFingerprint)) {
-        throw PaymentIdempotencyException.conflict();
-      }
-      return existing;
-    });
-    return record.response();
+    return idempotencyStore.execute(
+        keyHash,
+        requestFingerprint,
+        () -> processNewPayment(request));
   }
 
   private PaymentResponse processNewPayment(PaymentRequest request) {
@@ -157,9 +152,6 @@ public class PaymentService {
       case REVIEW -> PaymentStatus.REVIEW;
       case BLOCKED -> PaymentStatus.REJECTED;
     };
-  }
-
-  private record IdempotencyRecord(String requestFingerprint, PaymentResponse response) {
   }
 }
 

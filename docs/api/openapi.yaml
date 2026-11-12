@@ -18,7 +18,8 @@ paths:
         requires an HS256 bearer token with payment.write in the scope claim. An
         optional Idempotency-Key deduplicates retries within one process after the
         initial keyed request returns 202, returning the original decision when the
-        normalized payment request is equivalent.
+        normalized payment request is equivalent and its cache entry is still
+        retained.
       servers:
         - url: http://localhost:8081
           description: Payment Service
@@ -279,8 +280,10 @@ components:
       description: >-
         Opaque retry key. Values must contain 1 to 128 visible ASCII characters.
         The raw key is represented only by a SHA-256 hash; the cache also retains the
-        original payment response. Replay state resets when the payment-service
-        process restarts.
+        original payment response. The cache is bounded by a configurable entry limit
+        and write-based retention window; replay does not extend that window. An
+        expired or evicted key is treated as a new submission. Replay state also
+        resets when the payment-service process restarts.
       schema:
         type: string
         minLength: 1

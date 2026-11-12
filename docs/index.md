@@ -26,7 +26,7 @@ Records payment decisions through a local endpoint or Kafka consumer profile.
 | Capability | Status |
 | --- | --- |
 | Payment command submission | <span class="status-pill status-accepted">Ready</span> |
-| Process-local payment retry idempotency | <span class="status-pill status-accepted">Ready (opt-in)</span> |
+| Bounded process-local payment retry idempotency | <span class="status-pill status-accepted">Ready (opt-in)</span> |
 | Fraud rules and tests | <span class="status-pill status-accepted">Ready</span> |
 | Transaction ledger service | <span class="status-pill status-accepted">Ready</span> |
 | Kafka runtime profile | <span class="status-pill status-review">Starter</span> |

@@ -83,6 +83,12 @@ synchronous event-publication failure before the initial `202` is returned is no
 cached as a successful result. With the secure profile, authentication and
 `payment.write` authorization still occur before header or body processing.
 
+The default cache keeps at most 10,000 successful keyed responses for 24 hours from
+their initial write. Equivalent replays do not extend retention. Configure capacity
+with `UPI_IDEMPOTENCY_MAX_ENTRIES` and the Spring duration with
+`UPI_IDEMPOTENCY_RETENTION`. An expired or capacity-evicted key is treated as a new
+submission and can therefore produce a new payment ID and event.
+
 ## Decision Codes
 
 | Code | Status | Meaning |

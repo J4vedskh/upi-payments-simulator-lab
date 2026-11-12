@@ -87,6 +87,12 @@ running payment service and resets on restart, so durable cross-instance replay
 protection remains part of the PostgreSQL roadmap. A synchronous publication
 failure before the initial `202` is returned is not cached as successful.
 
+The default replay cache retains at most 10,000 successful keyed responses for 24
+hours from their initial write. Replays do not refresh that clock. Both limits are
+environment-configurable, and an expired or evicted key is treated as a new
+submission. This keeps the in-memory safeguard bounded while durable cross-instance
+idempotency remains on the PostgreSQL roadmap.
+
 ## Fraud Engine
 
 The fraud engine is the decision brain of the simulator.
