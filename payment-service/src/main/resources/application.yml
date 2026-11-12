@@ -19,6 +19,9 @@ management:
         enabled: true
 
 app:
+  idempotency:
+    max-entries: ${UPI_IDEMPOTENCY_MAX_ENTRIES:10000}
+    retention: ${UPI_IDEMPOTENCY_RETENTION:24h}
   fraud:
     review-threshold: ${UPI_FRAUD_REVIEW_THRESHOLD:50000.00}
     block-threshold: ${UPI_FRAUD_BLOCK_THRESHOLD:200000.00}

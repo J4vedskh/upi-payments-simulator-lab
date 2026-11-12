@@ -35,6 +35,20 @@ is not retained. Cache state resets on process restart and is not a replacement 
 the planned database-backed implementation. A synchronous publication failure
 before the initial `202` is not cached as successful.
 
+| Setting | Environment variable | Default | Behavior |
+| --- | --- | ---: | --- |
+| Maximum retained keys | `UPI_IDEMPOTENCY_MAX_ENTRIES` | `10000` | Evicts successful cached responses when capacity is exceeded. |
+| Retention from initial write | `UPI_IDEMPOTENCY_RETENTION` | `24h` | Expiry is write-based; equivalent replay does not extend it. |
+
+Both settings must be positive. An expired or evicted key is treated as a new
+submission. For example, set a smaller local-demo window before startup:
+
+```powershell
+$env:UPI_IDEMPOTENCY_MAX_ENTRIES = "250"
+$env:UPI_IDEMPOTENCY_RETENTION = "45m"
+mvn -pl payment-service spring-boot:run
+```
+
 ## Configure Fraud Thresholds
 
 The payment service uses these defaults:

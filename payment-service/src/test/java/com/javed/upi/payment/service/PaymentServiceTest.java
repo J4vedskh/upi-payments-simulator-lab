@@ -10,6 +10,7 @@ import com.javed.upi.events.PaymentStatus;
 import com.javed.upi.fraud.FraudEngine;
 import com.javed.upi.payment.api.PaymentRequest;
 import com.javed.upi.payment.api.PaymentResponse;
+import com.javed.upi.payment.config.PaymentIdempotencyProperties;
 import com.javed.upi.payment.observability.PaymentDecisionMetrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
@@ -35,7 +36,8 @@ class PaymentServiceTest {
       FraudEngine.defaultEngine(),
       publisher,
       new PaymentDecisionMetrics(meterRegistry),
-      Clock.fixed(Instant.parse("2026-05-27T10:00:00Z"), ZoneOffset.UTC));
+      Clock.fixed(Instant.parse("2026-05-27T10:00:00Z"), ZoneOffset.UTC),
+      idempotencyStore());
 
   @Test
   void acceptedPaymentIsStoredAndPublished() {
@@ -127,7 +129,8 @@ class PaymentServiceTest {
         FraudEngine.defaultEngine(),
         blockingPublisher,
         new PaymentDecisionMetrics(concurrentRegistry),
-        Clock.fixed(Instant.parse("2026-05-27T10:00:00Z"), ZoneOffset.UTC));
+        Clock.fixed(Instant.parse("2026-05-27T10:00:00Z"), ZoneOffset.UTC),
+        idempotencyStore());
     PaymentRequest request = new PaymentRequest(
         "alice@upi",
         "merchant@upi",
@@ -217,6 +220,11 @@ class PaymentServiceTest {
         .tag("status", status.name().toLowerCase(Locale.ROOT))
         .counter()
         .count();
+  }
+
+  private static PaymentIdempotencyStore idempotencyStore() {
+    return new PaymentIdempotencyStore(
+        new PaymentIdempotencyProperties(10_000, java.time.Duration.ofHours(24)));
   }
 
   private static final class CapturingPublisher implements PaymentEventPublisher {

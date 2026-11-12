@@ -65,6 +65,12 @@ is local to one running payment service and resets on restart, so cross-instance
 durability remains part of the PostgreSQL roadmap. A synchronous publication
 failure before the initial `202` is returned is not cached as a successful result.
 
+By default, at most 10,000 successful keyed responses are retained for 24 hours
+from their initial write. Replaying a key does not extend that period. Override the
+limits with `UPI_IDEMPOTENCY_MAX_ENTRIES` and `UPI_IDEMPOTENCY_RETENTION` (for
+example, `45m`). Once a key expires or is evicted for capacity, submitting it again
+creates a new payment.
+
 ### Configure fraud thresholds
 
 The amount review threshold defaults to `50000.00` and the hard block threshold
