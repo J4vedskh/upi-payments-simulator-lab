@@ -65,6 +65,13 @@ is local to one running payment service and resets on restart, so cross-instance
 durability remains part of the PostgreSQL roadmap. A synchronous publication
 failure before the initial `202` is returned is not cached as a successful result.
 
+If the event publisher throws while it is invoked, the API returns a fixed
+`503 EVENT_PUBLICATION_FAILED` response before committing the local payment lookup,
+decision metric, or idempotency result. A keyed retry can therefore try again. This
+only covers a synchronous invocation failure: the Kafka adapter does not await broker
+acknowledgement, and an adapter that throws after an external side effect may still
+have delivered an event. Durable publication recovery remains an outbox concern.
+
 By default, at most 10,000 successful keyed responses are retained for 24 hours
 from their initial write. Replaying a key does not extend that period. Override the
 limits with `UPI_IDEMPOTENCY_MAX_ENTRIES` and `UPI_IDEMPOTENCY_RETENTION` (for

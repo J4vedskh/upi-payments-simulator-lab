@@ -77,8 +77,8 @@ When a payment is submitted, `PaymentService`:
 5. Creates a unique payment ID for a new submission.
 6. Normalizes the currency and channel.
 7. Builds a `PaymentCommand` and sends it to the fraud engine.
-8. Creates and stores the resulting `PaymentEvent` in memory.
-9. Increments the bounded decision counter and publishes the event.
+8. Creates the resulting `PaymentEvent` and invokes the configured publisher.
+9. Stores the successful event in memory and increments the bounded decision counter.
 10. Returns a `PaymentResponse` to the caller.
 
 The idempotency cache retains the original payment response and SHA-256 hashes of
@@ -92,6 +92,12 @@ hours from their initial write. Replays do not refresh that clock. Both limits a
 environment-configurable, and an expired or evicted key is treated as a new
 submission. This keeps the in-memory safeguard bounded while durable cross-instance
 idempotency remains on the PostgreSQL roadmap.
+
+If publisher invocation throws immediately, the service returns a fixed structured
+`503` before committing the local lookup, metric, or idempotency response. A keyed
+retry may then try again. Kafka acknowledgement is asynchronous and an adapter can
+fail after an external side effect, so this safeguard is not a durable broker
+delivery guarantee; that requires an outbox.
 
 ## Fraud Engine
 

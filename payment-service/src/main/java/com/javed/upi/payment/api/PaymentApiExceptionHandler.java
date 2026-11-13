@@ -1,5 +1,6 @@
 package com.javed.upi.payment.api;
 
+import com.javed.upi.payment.service.PaymentEventPublicationException;
 import com.javed.upi.payment.service.PaymentIdempotencyException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
@@ -16,6 +17,18 @@ import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 public class PaymentApiExceptionHandler {
+
+  @ExceptionHandler(PaymentEventPublicationException.class)
+  ResponseEntity<ApiErrorResponse> handlePublicationFailure(
+      PaymentEventPublicationException exception,
+      HttpServletRequest request) {
+    return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(ApiErrorResponse.of(
+        HttpStatus.SERVICE_UNAVAILABLE.value(),
+        "EVENT_PUBLICATION_FAILED",
+        exception.getMessage(),
+        request.getRequestURI(),
+        Map.of()));
+  }
 
   @ExceptionHandler(PaymentIdempotencyException.class)
   ResponseEntity<ApiErrorResponse> handleIdempotency(

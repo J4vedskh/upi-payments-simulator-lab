@@ -119,6 +119,7 @@ class OpenApiContractTest {
         "Access is denied.");
     assertPaymentBadRequestExamples(submitPayment);
     assertIdempotencyConflictExample(submitPayment);
+    assertPublicationFailureExample(submitPayment);
     assertUnsupportedMediaTypeExample(submitPayment, "/api/payments");
 
     Map<String, Object> securitySchemes = map(map(document.get("components"))
@@ -262,6 +263,25 @@ class OpenApiContractTest {
         .containsEntry(
             "message",
             "Idempotency-Key was already used for a different payment request.")
+        .containsEntry("path", "/api/payments");
+    assertThat(map(example.get("validationErrors"))).isEmpty();
+  }
+
+  private static void assertPublicationFailureExample(Map<String, Object> submitPayment) {
+    assertThat(responseSchemaReference(submitPayment, "503"))
+        .isEqualTo("#/components/schemas/ErrorResponse");
+    Map<String, Object> response = map(map(submitPayment.get("responses")).get("503"));
+    assertThat(String.valueOf(response.get("description")))
+        .contains("Synchronous", "local payment", "asynchronous broker");
+    Map<String, Object> content = map(response.get("content"));
+    assertThat(content).containsOnlyKeys("application/json");
+    Map<String, Object> example = map(map(content.get("application/json")).get("example"));
+    assertThat(example)
+        .containsOnlyKeys("timestamp", "status", "error", "message", "path", "validationErrors")
+        .containsEntry("timestamp", "2026-11-13T05:00:00Z")
+        .containsEntry("status", 503)
+        .containsEntry("error", "EVENT_PUBLICATION_FAILED")
+        .containsEntry("message", "Payment event publication is temporarily unavailable.")
         .containsEntry("path", "/api/payments");
     assertThat(map(example.get("validationErrors"))).isEmpty();
   }

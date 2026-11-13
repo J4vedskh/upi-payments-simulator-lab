@@ -206,6 +206,52 @@ class PaymentServiceTest {
   }
 
   @Test
+  void synchronousPublicationFailureLeavesNoLocalSuccessAndAllowsKeyedRetry() {
+    FailOncePublisher failOncePublisher = new FailOncePublisher();
+    SimpleMeterRegistry failureRegistry = new SimpleMeterRegistry();
+    PaymentService failureService = new PaymentService(
+        FraudEngine.defaultEngine(),
+        failOncePublisher,
+        new PaymentDecisionMetrics(failureRegistry),
+        Clock.fixed(Instant.parse("2026-05-27T10:00:00Z"), ZoneOffset.UTC),
+        idempotencyStore());
+    PaymentRequest request = new PaymentRequest(
+        "alice@upi",
+        "merchant@upi",
+        new BigDecimal("249.50"),
+        "INR",
+        "MOBILE");
+
+    PaymentEventPublicationException failure = assertThrows(
+        PaymentEventPublicationException.class,
+        () -> failureService.submit(request, "retry-after-publish-failure"));
+
+    assertEquals("Payment event publication is temporarily unavailable.", failure.getMessage());
+    assertThrows(
+        ResponseStatusException.class,
+        () -> failureService.find(failOncePublisher.failedPaymentId));
+    assertEquals(
+        0.0,
+        failureRegistry.get(PaymentDecisionMetrics.METRIC_NAME)
+            .tag("status", "accepted")
+            .counter()
+            .count());
+
+    PaymentResponse retry = failureService.submit(request, "retry-after-publish-failure");
+    PaymentResponse replay = failureService.submit(request, "retry-after-publish-failure");
+
+    assertEquals(retry, replay);
+    assertEquals(2, failOncePublisher.attempts.get());
+    assertEquals(1, failOncePublisher.publishedEvents.size());
+    assertEquals(
+        1.0,
+        failureRegistry.get(PaymentDecisionMetrics.METRIC_NAME)
+            .tag("status", "accepted")
+            .counter()
+            .count());
+  }
+
+  @Test
   void missingPaymentReturnsNotFound() {
     ResponseStatusException exception = assertThrows(
         ResponseStatusException.class,
@@ -254,6 +300,21 @@ class PaymentServiceTest {
         throw new IllegalStateException(
             "Interrupted while waiting to release the test publisher.", exception);
       }
+    }
+  }
+
+  private static final class FailOncePublisher implements PaymentEventPublisher {
+    private final AtomicInteger attempts = new AtomicInteger();
+    private final List<PaymentEvent> publishedEvents = new ArrayList<>();
+    private String failedPaymentId;
+
+    @Override
+    public void publish(PaymentEvent event) {
+      if (attempts.incrementAndGet() == 1) {
+        failedPaymentId = event.paymentId();
+        throw new IllegalStateException("broker.internal.example:9092 refused the request");
+      }
+      publishedEvents.add(event);
     }
   }
 }
