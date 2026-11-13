@@ -94,9 +94,13 @@ public class PaymentService {
         decision.message(),
         now);
 
+    try {
+      eventPublisher.publish(event);
+    } catch (RuntimeException exception) {
+      throw new PaymentEventPublicationException(exception);
+    }
     payments.put(event.paymentId(), event);
     decisionMetrics.record(event.status());
-    eventPublisher.publish(event);
     return PaymentResponse.from(event);
   }
 

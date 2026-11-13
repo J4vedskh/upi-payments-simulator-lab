@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.javed.upi.events.PaymentStatus;
 import com.javed.upi.payment.security.PaymentSecurityConfiguration;
+import com.javed.upi.payment.service.PaymentEventPublicationException;
 import com.javed.upi.payment.service.PaymentIdempotencyException;
 import com.javed.upi.payment.service.PaymentService;
 import java.math.BigDecimal;
@@ -150,6 +151,30 @@ class PaymentControllerTest {
             .value("Idempotency-Key must contain 1 to 128 visible ASCII characters."))
         .andExpect(jsonPath("$.path").value("/api/payments"))
         .andExpect(jsonPath("$.validationErrors").isEmpty());
+  }
+
+  @Test
+  void synchronousPublicationFailureReturnsStableServiceUnavailableError() throws Exception {
+    when(paymentService.submit(any(PaymentRequest.class), isNull()))
+        .thenThrow(new PaymentEventPublicationException(
+            new IllegalStateException("broker.internal.example:9092 refused the request")));
+
+    mockMvc.perform(post("/api/payments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(new PaymentRequest(
+                "alice@upi",
+                "merchant@upi",
+                new BigDecimal("249.50"),
+                "INR",
+                "MOBILE"))))
+        .andExpect(status().isServiceUnavailable())
+        .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+        .andExpect(jsonPath("$.error").value("EVENT_PUBLICATION_FAILED"))
+        .andExpect(jsonPath("$.message")
+            .value("Payment event publication is temporarily unavailable."))
+        .andExpect(jsonPath("$.path").value("/api/payments"))
+        .andExpect(jsonPath("$.validationErrors").isEmpty())
+        .andExpect(content().string(not(containsString("broker.internal.example"))));
   }
 
   @Test

@@ -102,6 +102,19 @@ paths:
                 message: Content-Type is not supported for this endpoint.
                 path: /api/payments
                 validationErrors: {}
+        "503":
+          description: Synchronous publisher invocation failed, so the local payment and metric were not committed; asynchronous broker acknowledgement failures are outside this response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                timestamp: "2026-11-13T05:00:00Z"
+                status: 503
+                error: EVENT_PUBLICATION_FAILED
+                message: Payment event publication is temporarily unavailable.
+                path: /api/payments
+                validationErrors: {}
         "401":
           description: Bearer token is missing or invalid in the secure profile
           headers:

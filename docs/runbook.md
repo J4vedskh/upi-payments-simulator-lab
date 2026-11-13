@@ -49,6 +49,18 @@ $env:UPI_IDEMPOTENCY_RETENTION = "45m"
 mvn -pl payment-service spring-boot:run
 ```
 
+## Handle Immediate Publication Failure
+
+If the configured event publisher throws during invocation, payment submission
+returns `503 EVENT_PUBLICATION_FAILED` with the fixed message `Payment event
+publication is temporarily unavailable.` No local payment lookup, decision metric,
+or idempotency success is committed, so a keyed client may retry.
+
+This is a local synchronous boundary only. The Kafka publisher does not wait for
+broker acknowledgement, and a publisher that throws after an external side effect
+may still have delivered the event. Use broker monitoring and the planned durable
+outbox for asynchronous delivery recovery; do not infer non-delivery from the `503`.
+
 ## Configure Fraud Thresholds
 
 The payment service uses these defaults:

@@ -83,6 +83,16 @@ synchronous event-publication failure before the initial `202` is returned is no
 cached as a successful result. With the secure profile, authentication and
 `payment.write` authorization still occur before header or body processing.
 
+If the publisher invocation throws synchronously, submission returns `503` with
+error `EVENT_PUBLICATION_FAILED`, fixed message `Payment event publication is
+temporarily unavailable.`, the normal request path, and empty `validationErrors`.
+The service does not commit the local payment lookup, decision metric, or
+idempotency result, so the same key may be retried. Publisher causes are not exposed
+in the response. This does not cover an asynchronous Kafka acknowledgement failure,
+and it cannot prove that an adapter which throws after an external side effect did
+not deliver an event; durable recovery still requires the planned outbox/persistence
+work.
+
 The default cache keeps at most 10,000 successful keyed responses for 24 hours from
 their initial write. Equivalent replays do not extend retention. Configure capacity
 with `UPI_IDEMPOTENCY_MAX_ENTRIES` and the Spring duration with

@@ -37,6 +37,7 @@ Every run should report:
 
 | Date | Improvement | Verification |
 | --- | --- | --- |
+| 2026-11-13 | Made synchronous payment-event publication failure return a safe `503` before local payment, metric, or idempotency success is committed. | Focused service, controller, and parsed contract tests: 22 passed; `mvn -o -T 1C clean test` passed: 57 tests; `mkdocs build --strict` passed |
 | 2026-11-12 | Bounded the process-local payment idempotency cache with configurable capacity and non-sliding write-time expiry. | Focused configuration, retention, service, and parsed contract tests: 16 passed; `mvn -o -T 1C clean test` passed: 55 tests; `mkdocs build --strict` passed |
 | 2026-11-11 | Added optional hashed payment-submission idempotency so equivalent retries reuse one decision and conflicting key reuse fails safely. | Focused service, controller, security, and parsed contract tests: 27 passed; `mvn -o -T 1C clean test` passed: 49 tests; `mkdocs build --strict` passed |
 | 2026-11-10 | Made ledger ingestion idempotent by payment ID so Kafka and direct HTTP replays retain the first successfully recorded entry and do not inflate record metrics. | Focused service and parsed contract tests; `mvn -o -T 1C clean test` passed: 41 tests; `mkdocs build --strict` passed |

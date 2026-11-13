@@ -59,6 +59,12 @@ The replay cache is bounded and expires entries from their initial successful
 write; cache hits do not extend retention. Capacity eviction, expiry, or process
 restart makes a later use of that key a new submission.
 
+The payment service invokes its publisher before committing the local lookup entry
+and decision metric. An immediate publisher exception returns a fixed `503` and
+leaves no local idempotency success, allowing a keyed retry. Kafka acknowledgement is
+asynchronous, so this boundary is not a durable-delivery or non-delivery guarantee;
+that still requires an outbox.
+
 ## Profiles
 
 | Profile | Behavior |
