@@ -57,6 +57,16 @@ class PrometheusEndpointIntegrationTest {
         .allMatch(line -> line.matches(
             "upi_payment_decisions_total\\{status=\\\"(accepted|review|rejected)\\\"} [0-9.E+-]+"))
         .anyMatch(line -> line.contains("status=\"accepted\"") && line.endsWith(" 1.0"));
+
+    var publicationSamples = prometheus.lines()
+        .filter(line -> line.startsWith("upi_payment_publications_total{"))
+        .toList();
+    assertThat(publicationSamples)
+        .hasSize(2)
+        .allMatch(line -> line.matches(
+            "upi_payment_publications_total\\{outcome=\\\"(success|failure)\\\"} [0-9.E+-]+"))
+        .anyMatch(line -> line.contains("outcome=\"success\"") && line.endsWith(" 1.0"))
+        .anyMatch(line -> line.contains("outcome=\"failure\"") && line.endsWith(" 0.0"));
     assertThat(prometheus).doesNotContain("alice@upi", "merchant@upi", "249.5");
   }
 }

@@ -186,6 +186,10 @@ This makes client behavior predictable and keeps API failures easy to demonstrat
 ## Prometheus Metrics
 
 The services expose operational metrics at `GET /actuator/prometheus`. The
-payment service publishes `upi_payment_decisions_total`, and the ledger publishes
-`upi_ledger_records_total` for first-time ledger entries. Each counter uses only
-the bounded `status` label; request identifiers and payment details are excluded.
+payment service publishes `upi_payment_decisions_total` and
+`upi_payment_publications_total`; the ledger publishes `upi_ledger_records_total`
+for first-time entries. Publication counters use only `outcome="success"` and
+`outcome="failure"`. Success means the publisher invocation returned, not that Kafka
+acknowledged or delivered the event; failure means it threw synchronously. The
+decision and ledger counters retain their bounded `status` label. Request identifiers,
+payment details, and broker diagnostics are excluded from all custom labels.

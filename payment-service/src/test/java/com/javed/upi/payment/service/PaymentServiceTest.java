@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 
 import com.javed.upi.events.PaymentEvent;
 import com.javed.upi.events.PaymentStatus;
@@ -12,6 +14,7 @@ import com.javed.upi.payment.api.PaymentRequest;
 import com.javed.upi.payment.api.PaymentResponse;
 import com.javed.upi.payment.config.PaymentIdempotencyProperties;
 import com.javed.upi.payment.observability.PaymentDecisionMetrics;
+import com.javed.upi.payment.observability.PaymentPublicationMetrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -32,10 +35,13 @@ import org.springframework.web.server.ResponseStatusException;
 class PaymentServiceTest {
   private final CapturingPublisher publisher = new CapturingPublisher();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final PaymentPublicationMetrics publicationMetrics =
+      new PaymentPublicationMetrics(meterRegistry);
   private final PaymentService service = new PaymentService(
       FraudEngine.defaultEngine(),
       publisher,
       new PaymentDecisionMetrics(meterRegistry),
+      publicationMetrics,
       Clock.fixed(Instant.parse("2026-05-27T10:00:00Z"), ZoneOffset.UTC),
       idempotencyStore());
 
@@ -53,6 +59,8 @@ class PaymentServiceTest {
     assertEquals(1, publisher.events.size());
     assertEquals(response.paymentId(), publisher.events.get(0).paymentId());
     assertEquals(1.0, decisionCount(PaymentStatus.ACCEPTED));
+    assertEquals(1.0, publicationCount("success"));
+    assertEquals(0.0, publicationCount("failure"));
   }
 
   @Test
@@ -102,6 +110,7 @@ class PaymentServiceTest {
     assertEquals(initial, replay);
     assertEquals(1, publisher.events.size());
     assertEquals(1.0, decisionCount(PaymentStatus.ACCEPTED));
+    assertEquals(1.0, publicationCount("success"));
   }
 
   @Test
@@ -129,6 +138,7 @@ class PaymentServiceTest {
         FraudEngine.defaultEngine(),
         blockingPublisher,
         new PaymentDecisionMetrics(concurrentRegistry),
+        new PaymentPublicationMetrics(concurrentRegistry),
         Clock.fixed(Instant.parse("2026-05-27T10:00:00Z"), ZoneOffset.UTC),
         idempotencyStore());
     PaymentRequest request = new PaymentRequest(
@@ -150,6 +160,12 @@ class PaymentServiceTest {
 
       assertEquals(first.get(5, TimeUnit.SECONDS), second.get(5, TimeUnit.SECONDS));
       assertEquals(1, blockingPublisher.publishCount.get());
+      assertEquals(
+          1.0,
+          concurrentRegistry.get(PaymentPublicationMetrics.METRIC_NAME)
+              .tag("outcome", "success")
+              .counter()
+              .count());
       assertEquals(
           1.0,
           concurrentRegistry.get(PaymentDecisionMetrics.METRIC_NAME)
@@ -183,6 +199,8 @@ class PaymentServiceTest {
     assertEquals(PaymentIdempotencyException.Reason.CONFLICT, exception.reason());
     assertEquals(1, publisher.events.size());
     assertEquals(1.0, decisionCount(PaymentStatus.ACCEPTED));
+    assertEquals(1.0, publicationCount("success"));
+    assertEquals(0.0, publicationCount("failure"));
   }
 
   @Test
@@ -213,6 +231,7 @@ class PaymentServiceTest {
         FraudEngine.defaultEngine(),
         failOncePublisher,
         new PaymentDecisionMetrics(failureRegistry),
+        new PaymentPublicationMetrics(failureRegistry),
         Clock.fixed(Instant.parse("2026-05-27T10:00:00Z"), ZoneOffset.UTC),
         idempotencyStore());
     PaymentRequest request = new PaymentRequest(
@@ -236,6 +255,18 @@ class PaymentServiceTest {
             .tag("status", "accepted")
             .counter()
             .count());
+    assertEquals(
+        1.0,
+        failureRegistry.get(PaymentPublicationMetrics.METRIC_NAME)
+            .tag("outcome", "failure")
+            .counter()
+            .count());
+    assertEquals(
+        0.0,
+        failureRegistry.get(PaymentPublicationMetrics.METRIC_NAME)
+            .tag("outcome", "success")
+            .counter()
+            .count());
 
     PaymentResponse retry = failureService.submit(request, "retry-after-publish-failure");
     PaymentResponse replay = failureService.submit(request, "retry-after-publish-failure");
@@ -245,10 +276,61 @@ class PaymentServiceTest {
     assertEquals(1, failOncePublisher.publishedEvents.size());
     assertEquals(
         1.0,
+        failureRegistry.get(PaymentPublicationMetrics.METRIC_NAME)
+            .tag("outcome", "success")
+            .counter()
+            .count());
+    assertEquals(
+        1.0,
         failureRegistry.get(PaymentDecisionMetrics.METRIC_NAME)
             .tag("status", "accepted")
             .counter()
             .count());
+  }
+
+  @Test
+  void publicationMetricFailureDoesNotChangePaymentOrFailureResults() {
+    PaymentPublicationMetrics failingMetrics = mock(PaymentPublicationMetrics.class);
+    doThrow(new IllegalStateException("metrics backend unavailable"))
+        .when(failingMetrics).recordSuccess();
+    doThrow(new IllegalStateException("metrics backend unavailable"))
+        .when(failingMetrics).recordFailure();
+
+    CapturingPublisher successfulPublisher = new CapturingPublisher();
+    PaymentService successfulService = new PaymentService(
+        FraudEngine.defaultEngine(),
+        successfulPublisher,
+        new PaymentDecisionMetrics(new SimpleMeterRegistry()),
+        failingMetrics,
+        Clock.fixed(Instant.parse("2026-05-27T10:00:00Z"), ZoneOffset.UTC),
+        idempotencyStore());
+    PaymentRequest request = new PaymentRequest(
+        "alice@upi",
+        "merchant@upi",
+        new BigDecimal("249.50"),
+        "INR",
+        "MOBILE");
+
+    PaymentResponse response = successfulService.submit(request, null);
+
+    assertEquals(1, successfulPublisher.events.size());
+    assertEquals(response, successfulService.find(response.paymentId()));
+
+    FailOncePublisher failingPublisher = new FailOncePublisher();
+    PaymentService failingService = new PaymentService(
+        FraudEngine.defaultEngine(),
+        failingPublisher,
+        new PaymentDecisionMetrics(new SimpleMeterRegistry()),
+        failingMetrics,
+        Clock.fixed(Instant.parse("2026-05-27T10:00:00Z"), ZoneOffset.UTC),
+        idempotencyStore());
+
+    PaymentEventPublicationException failure = assertThrows(
+        PaymentEventPublicationException.class,
+        () -> failingService.submit(request, null));
+
+    assertEquals("Payment event publication is temporarily unavailable.", failure.getMessage());
+    assertTrue(failure.getCause() instanceof IllegalStateException);
   }
 
   @Test
@@ -264,6 +346,13 @@ class PaymentServiceTest {
   private double decisionCount(PaymentStatus status) {
     return meterRegistry.get(PaymentDecisionMetrics.METRIC_NAME)
         .tag("status", status.name().toLowerCase(Locale.ROOT))
+        .counter()
+        .count();
+  }
+
+  private double publicationCount(String outcome) {
+    return meterRegistry.get(PaymentPublicationMetrics.METRIC_NAME)
+        .tag("outcome", outcome)
         .counter()
         .count();
   }
