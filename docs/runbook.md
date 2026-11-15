@@ -131,11 +131,14 @@ curl http://localhost:8082/actuator/prometheus
 | Metric | Meaning |
 | --- | --- |
 | `upi_payment_decisions_total{status="..."}` | New payment decisions evaluated by the fraud engine; equivalent keyed retries do not increment it |
+| `upi_payment_publications_total{outcome="..."}` | Publisher invocations with fixed `success` or `failure` outcomes; this is not broker-acknowledgement evidence |
 | `upi_ledger_records_total{status="..."}` | First-time ledger entries; replayed payment IDs retain the successfully recorded entry and do not increment the counter |
 
-The only custom label is `status`, with the fixed values `accepted`, `review`,
-and `rejected`. Payment IDs, VPAs, amounts, currencies, channels, decision codes,
-and request identifiers are deliberately excluded from labels.
+Custom labels are bounded: `status` uses `accepted`, `review`, or `rejected`, and
+publication `outcome` uses `success` or `failure`. Payment IDs, VPAs, amounts,
+currencies, channels, decision codes, request identifiers, and broker diagnostics
+are deliberately excluded from labels. Publication success records a returned
+publisher invocation; inspect Kafka separately for acknowledgement and delivery.
 
 Each service's counters reset when that service restarts. An external Prometheus
 server can retain historical samples across restarts. The ledger counter measures

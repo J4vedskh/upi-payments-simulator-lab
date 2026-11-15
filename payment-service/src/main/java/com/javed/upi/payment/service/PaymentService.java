@@ -9,6 +9,7 @@ import com.javed.upi.fraud.PaymentRisk;
 import com.javed.upi.payment.api.PaymentRequest;
 import com.javed.upi.payment.api.PaymentResponse;
 import com.javed.upi.payment.observability.PaymentDecisionMetrics;
+import com.javed.upi.payment.observability.PaymentPublicationMetrics;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -19,6 +20,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -27,10 +30,12 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class PaymentService {
   private static final int MAX_IDEMPOTENCY_KEY_LENGTH = 128;
+  private static final Logger LOGGER = LoggerFactory.getLogger(PaymentService.class);
 
   private final FraudEngine fraudEngine;
   private final PaymentEventPublisher eventPublisher;
   private final PaymentDecisionMetrics decisionMetrics;
+  private final PaymentPublicationMetrics publicationMetrics;
   private final Clock clock;
   private final PaymentIdempotencyStore idempotencyStore;
   private final Map<String, PaymentEvent> payments = new ConcurrentHashMap<>();
@@ -40,19 +45,28 @@ public class PaymentService {
       FraudEngine fraudEngine,
       PaymentEventPublisher eventPublisher,
       PaymentDecisionMetrics decisionMetrics,
+      PaymentPublicationMetrics publicationMetrics,
       PaymentIdempotencyStore idempotencyStore) {
-    this(fraudEngine, eventPublisher, decisionMetrics, Clock.systemUTC(), idempotencyStore);
+    this(
+        fraudEngine,
+        eventPublisher,
+        decisionMetrics,
+        publicationMetrics,
+        Clock.systemUTC(),
+        idempotencyStore);
   }
 
   PaymentService(
       FraudEngine fraudEngine,
       PaymentEventPublisher eventPublisher,
       PaymentDecisionMetrics decisionMetrics,
+      PaymentPublicationMetrics publicationMetrics,
       Clock clock,
       PaymentIdempotencyStore idempotencyStore) {
     this.fraudEngine = fraudEngine;
     this.eventPublisher = eventPublisher;
     this.decisionMetrics = decisionMetrics;
+    this.publicationMetrics = publicationMetrics;
     this.clock = clock;
     this.idempotencyStore = idempotencyStore;
   }
@@ -97,11 +111,24 @@ public class PaymentService {
     try {
       eventPublisher.publish(event);
     } catch (RuntimeException exception) {
+      recordPublicationOutcome("failure", publicationMetrics::recordFailure);
       throw new PaymentEventPublicationException(exception);
     }
+    recordPublicationOutcome("success", publicationMetrics::recordSuccess);
     payments.put(event.paymentId(), event);
     decisionMetrics.record(event.status());
     return PaymentResponse.from(event);
+  }
+
+  private void recordPublicationOutcome(String outcome, Runnable recorder) {
+    try {
+      recorder.run();
+    } catch (RuntimeException exception) {
+      LOGGER.warn(
+          "Unable to record payment publication metric for outcome={} cause={}",
+          outcome,
+          exception.getClass().getSimpleName());
+    }
   }
 
   private static String validateIdempotencyKey(String idempotencyKey) {

@@ -19,6 +19,7 @@ The rolling branch `codex/daily-progress` is intended to make one real improveme
 - [x] Add optional hashed payment-submission idempotency with safe conflict handling.
 - [x] Bound payment idempotency retention by configurable capacity and write-time expiry.
 - [x] Fail synchronous payment-event publication safely before local success is committed.
+- [x] Expose bounded synchronous publication invocation outcome metrics.
 
 ## Near-Term Improvements
 

@@ -163,12 +163,17 @@ This gives the project an audit-style component: after a payment decision is mad
 
 Both services expose `GET /actuator/prometheus`. The payment service increments
 `upi_payment_decisions_total` after it evaluates and stores a payment decision.
+It also increments `upi_payment_publications_total` with the fixed outcome
+`success` when publisher invocation returns or `failure` when it throws
+synchronously. This metric does not prove Kafka acknowledgement or delivery.
 The ledger increments `upi_ledger_records_total` after each first-time entry.
 
-Both counters use exactly one custom label, `status`, with the fixed values
-`accepted`, `review`, and `rejected`. They do not use payment IDs, VPAs, amounts,
-currencies, channels, or decision codes as labels. This keeps the number of time
-series bounded and avoids placing payment details in labels.
+Every counter uses exactly one bounded custom label: payment decisions and ledger
+entries use `status` with `accepted`, `review`, and `rejected`; publisher invocations
+use `outcome` with `success` and `failure`. They do not use payment IDs, VPAs,
+amounts, currencies, channels, decision codes, or broker diagnostics as labels.
+This keeps the number of time series bounded and avoids placing sensitive details
+in labels.
 
 The ledger metric counts unique payment IDs accepted by the current process. If an
 event is replayed, the successfully recorded entry and its `recordedAt` value remain
@@ -348,7 +353,7 @@ Representative test files:
 | [`payment-service/src/test/java/com/javed/upi/payment/service/PaymentServiceTest.java`](payment-service/src/test/java/com/javed/upi/payment/service/PaymentServiceTest.java) | Payment service tests |
 | [`payment-service/src/test/java/com/javed/upi/payment/api/PaymentControllerTest.java`](payment-service/src/test/java/com/javed/upi/payment/api/PaymentControllerTest.java) | Payment API controller tests |
 | [`payment-service/src/test/java/com/javed/upi/payment/api/PaymentSecurityTest.java`](payment-service/src/test/java/com/javed/upi/payment/api/PaymentSecurityTest.java) | Secure-profile authorization boundary tests; default compatibility remains covered by `PaymentControllerTest` |
-| [`payment-service/src/test/java/com/javed/upi/payment/observability/PrometheusEndpointIntegrationTest.java`](payment-service/src/test/java/com/javed/upi/payment/observability/PrometheusEndpointIntegrationTest.java) | Payment decision Prometheus exposition and privacy-boundary test |
+| [`payment-service/src/test/java/com/javed/upi/payment/observability/PrometheusEndpointIntegrationTest.java`](payment-service/src/test/java/com/javed/upi/payment/observability/PrometheusEndpointIntegrationTest.java) | Payment decision/publication Prometheus exposition and privacy-boundary test |
 | [`transaction-ledger/src/test/java/com/javed/upi/ledger/service/TransactionLedgerServiceTest.java`](transaction-ledger/src/test/java/com/javed/upi/ledger/service/TransactionLedgerServiceTest.java) | Ledger service tests |
 | [`transaction-ledger/src/test/java/com/javed/upi/ledger/api/LedgerControllerTest.java`](transaction-ledger/src/test/java/com/javed/upi/ledger/api/LedgerControllerTest.java) | Ledger API controller tests |
 | [`transaction-ledger/src/test/java/com/javed/upi/ledger/observability/PrometheusEndpointIntegrationTest.java`](transaction-ledger/src/test/java/com/javed/upi/ledger/observability/PrometheusEndpointIntegrationTest.java) | Ledger record Prometheus exposition and privacy-boundary test |
