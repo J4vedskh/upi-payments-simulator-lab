@@ -34,6 +34,7 @@ Records payment decisions through a local endpoint or Kafka consumer profile.
 | Durable PostgreSQL persistence | <span class="status-pill status-review">Roadmap</span> |
 | JWT-secured payment submission profile | <span class="status-pill status-accepted">Ready (opt-in)</span> |
 | Bounded Prometheus business metrics | <span class="status-pill status-accepted">Ready</span> |
+| Read-only GitHub Pages API Explorer | <span class="status-pill status-accepted">Ready</span> |
 
 ## Why This Project Matters
 
