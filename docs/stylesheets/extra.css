@@ -41,3 +41,17 @@
   width: 100%;
 }
 
+.md-typeset .api-explorer-shell {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.4rem;
+  margin-top: 1rem;
+  min-height: 75vh;
+  overflow: hidden;
+}
+
+.md-typeset .api-explorer-shell rapi-doc {
+  display: block;
+  min-height: 75vh;
+  width: 100%;
+}
+

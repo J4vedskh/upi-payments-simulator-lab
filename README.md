@@ -4,6 +4,8 @@ UPI Payments Simulator Lab is a portfolio-grade Java project that models a UPI-s
 
 Live docs: https://j4vedskh.github.io/upi-payments-simulator-lab/
 
+Read-only API Explorer: https://j4vedskh.github.io/upi-payments-simulator-lab/api-explorer/
+
 Project deep dive: [PROJECT_EXPLANATION.md](PROJECT_EXPLANATION.md)
 
 ## What It Shows
@@ -160,4 +162,5 @@ pip install -r docs/requirements.txt
 mkdocs build --strict
 ```
 
-The docs use Material for MkDocs, Mermaid diagrams, and a versioned OpenAPI contract.
+The docs use Material for MkDocs, Mermaid diagrams, a versioned OpenAPI contract,
+and a pinned read-only RapiDoc explorer.

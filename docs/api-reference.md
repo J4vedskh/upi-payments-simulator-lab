@@ -1,6 +1,8 @@
 # API Reference
 
 The versioned OpenAPI contract lives at [`docs/api/openapi.yaml`](api/openapi.yaml).
+Use the [read-only API Explorer](api-explorer.md) for a searchable rendered view of
+the same contract.
 
 ## Authentication Profiles
 

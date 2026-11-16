@@ -37,6 +37,7 @@ Every run should report:
 
 | Date | Improvement | Verification |
 | --- | --- | --- |
+| 2026-11-16 | Added a pinned, read-only GitHub Pages API Explorer for the versioned OpenAPI contract. | Focused explorer source contract test passed; `mvn -o -T 1C clean test` passed: 60 tests; `mkdocs build --strict` passed |
 | 2026-11-15 | Added bounded Prometheus counters for synchronous payment-event publisher invocation success and failure. | Focused metric, service, and Prometheus exposition tests: 13 passed; `mvn -o -T 1C clean test` passed: 59 tests; `mkdocs build --strict` passed |
 | 2026-11-13 | Made synchronous payment-event publication failure return a safe `503` before local payment, metric, or idempotency success is committed. | Focused service, controller, and parsed contract tests: 22 passed; `mvn -o -T 1C clean test` passed: 57 tests; `mkdocs build --strict` passed |
 | 2026-11-12 | Bounded the process-local payment idempotency cache with configurable capacity and non-sliding write-time expiry. | Focused configuration, retention, service, and parsed contract tests: 16 passed; `mvn -o -T 1C clean test` passed: 55 tests; `mkdocs build --strict` passed |

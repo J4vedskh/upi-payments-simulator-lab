@@ -30,8 +30,12 @@ nav:
   - Overview: index.md
   - Architecture: architecture.md
   - API Reference: api-reference.md
+  - API Explorer: api-explorer.md
   - Runbook: runbook.md
   - Roadmap: roadmap.md
   - Daily Progress: daily-progress.md
 extra_css:
   - stylesheets/extra.css
+extra_javascript:
+  - path: https://unpkg.com/rapidoc@9.3.9/dist/rapidoc-min.js
+    type: module

@@ -20,6 +20,7 @@ The rolling branch `codex/daily-progress` is intended to make one real improveme
 - [x] Bound payment idempotency retention by configurable capacity and write-time expiry.
 - [x] Fail synchronous payment-event publication safely before local success is committed.
 - [x] Expose bounded synchronous publication invocation outcome metrics.
+- [x] Render the versioned OpenAPI contract through a read-only GitHub Pages explorer.
 
 ## Near-Term Improvements
 
@@ -28,7 +29,6 @@ The rolling branch `codex/daily-progress` is intended to make one real improveme
 | P1 | Add PostgreSQL persistence for payments and ledger entries | Makes the simulator closer to real payment platforms |
 | P1 | Add Testcontainers for Kafka integration tests | Verifies the event path beyond unit tests |
 | P2 | Add OpenTelemetry tracing | Adds cross-service request and event correlation |
-| P2 | Add GitHub Pages API rendering | Makes API docs easier to browse |
 | P3 | Add Helm chart and Minikube walkthrough | Strengthens platform engineering presentation |
 
 ## Automation Rules

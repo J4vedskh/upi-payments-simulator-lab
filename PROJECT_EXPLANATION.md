@@ -252,6 +252,13 @@ The OpenAPI contract lives in:
 
 [`docs/api/openapi.yaml`](docs/api/openapi.yaml)
 
+The published read-only explorer lives in:
+
+[`docs/api-explorer.md`](docs/api-explorer.md)
+
+It renders the same versioned contract through a pinned RapiDoc web component.
+Request execution is disabled, and the raw YAML remains available as a fallback.
+
 ### Submit Payment
 
 ```http
@@ -472,6 +479,7 @@ mkdocs build --strict
 | Structured API error responses | Ready |
 | GitHub Actions CI | Ready |
 | GitHub Pages documentation | Ready |
+| Read-only GitHub Pages API Explorer | Ready |
 | Durable PostgreSQL persistence | Roadmap |
 | JWT-secured payment submission profile | Ready (opt-in) |
 | Bounded Prometheus business metrics | Ready |
@@ -529,7 +537,6 @@ Near-term planned improvements:
 | P1 | Add PostgreSQL persistence for payments and ledger entries | Makes the simulator closer to real payment platforms |
 | P1 | Add Testcontainers for Kafka integration tests | Verifies the event path beyond unit tests |
 | P2 | Add OpenTelemetry tracing | Adds cross-service request and event correlation |
-| P2 | Add GitHub Pages API rendering | Makes API docs easier to browse |
 | P3 | Add Helm chart and Minikube walkthrough | Strengthens platform engineering presentation |
 
 ## Why This Project Matters
