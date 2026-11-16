@@ -256,8 +256,9 @@ The published read-only explorer lives in:
 
 [`docs/api-explorer.md`](docs/api-explorer.md)
 
-It renders the same versioned contract through a pinned RapiDoc web component.
-Request execution is disabled, and the raw YAML remains available as a fallback.
+It renders the same versioned contract through a pinned, self-hosted RapiDoc web
+component. Request execution is disabled, and the raw YAML remains available as a
+fallback.
 
 ### Submit Payment
 

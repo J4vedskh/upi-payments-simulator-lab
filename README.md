@@ -163,4 +163,4 @@ mkdocs build --strict
 ```
 
 The docs use Material for MkDocs, Mermaid diagrams, a versioned OpenAPI contract,
-and a pinned read-only RapiDoc explorer.
+and a pinned, self-hosted, read-only RapiDoc explorer.
