@@ -37,5 +37,5 @@ nav:
 extra_css:
   - stylesheets/extra.css
 extra_javascript:
-  - path: https://unpkg.com/rapidoc@9.3.9/dist/rapidoc-min.js
+  - path: javascripts/rapidoc-12.1.0.min.js
     type: module

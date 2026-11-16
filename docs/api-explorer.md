@@ -3,6 +3,8 @@
 Browse the versioned UPI Payments Simulator contract as an interactive, read-only
 reference. The explorer renders the same OpenAPI YAML that is validated by the
 repository's contract tests and published with this documentation site.
+Its pinned RapiDoc browser bundle is self-hosted with the site, so rendering does
+not depend on a runtime CDN request.
 
 !!! info "Read-only portfolio explorer"
 
