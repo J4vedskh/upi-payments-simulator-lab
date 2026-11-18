@@ -113,11 +113,18 @@ fixed `outcome` values `success` and `failure`. A success means the invocation
 returned; it does not prove Kafka acknowledgement or delivery. A failure means the
 publisher threw immediately and drove the structured `503` path.
 
+`upi_payment_publication_acknowledgements_total` counts how the Kafka send future
+completes, again with only `success` and `failure`. These series are pre-registered
+and remain zero outside the `kafka` profile. A successful acknowledgement is Kafka
+client confirmation, not proof that the ledger consumed the event or that delivery
+is durable/exactly-once.
+
 `upi_ledger_records_total` counts first-time ledger entries by `status`. Replayed
 payment IDs return the successfully recorded immutable entry without incrementing
 the ledger counter. Custom labels are bounded: `status` uses `accepted`, `review`,
-or `rejected`, while publication `outcome` uses `success` or `failure`. Payment IDs,
-VPAs, amounts, broker details, and other request values are not used as labels.
+or `rejected`, while publication and acknowledgement `outcome` use `success` or
+`failure`. Payment IDs, VPAs, amounts, broker details, and other request values are
+not used as labels.
 
 ### Opt-in secure profile
 

@@ -65,6 +65,11 @@ leaves no local idempotency success, allowing a keyed retry. Kafka acknowledgeme
 asynchronous, so this boundary is not a durable-delivery or non-delivery guarantee;
 that still requires an outbox.
 
+With the `kafka` profile, the publisher observes the `KafkaTemplate.send` future
+without blocking the `202` response. Its bounded acknowledgement metric records
+future completion as `success` or `failure`; it does not imply ledger consumption,
+retry, durable recovery, or exactly-once delivery.
+
 ## Profiles
 
 | Profile | Behavior |
