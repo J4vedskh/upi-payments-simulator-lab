@@ -20,6 +20,7 @@ The rolling branch `codex/daily-progress` is intended to make one real improveme
 - [x] Bound payment idempotency retention by configurable capacity and write-time expiry.
 - [x] Fail synchronous payment-event publication safely before local success is committed.
 - [x] Expose bounded synchronous publication invocation outcome metrics.
+- [x] Observe asynchronous Kafka send acknowledgements with bounded outcome metrics.
 - [x] Render the versioned OpenAPI contract through a read-only GitHub Pages explorer.
 
 ## Near-Term Improvements

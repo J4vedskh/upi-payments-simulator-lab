@@ -132,13 +132,16 @@ curl http://localhost:8082/actuator/prometheus
 | --- | --- |
 | `upi_payment_decisions_total{status="..."}` | New payment decisions evaluated by the fraud engine; equivalent keyed retries do not increment it |
 | `upi_payment_publications_total{outcome="..."}` | Publisher invocations with fixed `success` or `failure` outcomes; this is not broker-acknowledgement evidence |
+| `upi_payment_publication_acknowledgements_total{outcome="..."}` | Kafka send futures completed with fixed `success` or `failure` outcomes; this is not consumer or exactly-once evidence |
 | `upi_ledger_records_total{status="..."}` | First-time ledger entries; replayed payment IDs retain the successfully recorded entry and do not increment the counter |
 
 Custom labels are bounded: `status` uses `accepted`, `review`, or `rejected`, and
 publication `outcome` uses `success` or `failure`. Payment IDs, VPAs, amounts,
 currencies, channels, decision codes, request identifiers, and broker diagnostics
 are deliberately excluded from labels. Publication success records a returned
-publisher invocation; inspect Kafka separately for acknowledgement and delivery.
+publisher invocation. Acknowledgement success records a successfully completed
+Kafka send future and does not prove ledger consumption or durable delivery. The
+acknowledgement series remain zero when the `kafka` profile is inactive.
 
 Each service's counters reset when that service restarts. An external Prometheus
 server can retain historical samples across restarts. The ledger counter measures

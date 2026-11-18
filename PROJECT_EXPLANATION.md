@@ -166,14 +166,18 @@ Both services expose `GET /actuator/prometheus`. The payment service increments
 It also increments `upi_payment_publications_total` with the fixed outcome
 `success` when publisher invocation returns or `failure` when it throws
 synchronously. This metric does not prove Kafka acknowledgement or delivery.
+When the Kafka profile is active, `upi_payment_publication_acknowledgements_total`
+records whether the asynchronous send future completed with `success` or `failure`.
+These pre-registered series remain zero outside that profile, and success does not
+prove ledger consumption, durable recovery, or exactly-once delivery.
 The ledger increments `upi_ledger_records_total` after each first-time entry.
 
 Every counter uses exactly one bounded custom label: payment decisions and ledger
 entries use `status` with `accepted`, `review`, and `rejected`; publisher invocations
-use `outcome` with `success` and `failure`. They do not use payment IDs, VPAs,
-amounts, currencies, channels, decision codes, or broker diagnostics as labels.
-This keeps the number of time series bounded and avoids placing sensitive details
-in labels.
+and acknowledgements use `outcome` with `success` and `failure`. They do not use
+payment IDs, VPAs, amounts, currencies, channels, decision codes, or broker
+diagnostics as labels. This keeps the number of time series bounded and avoids
+placing sensitive details in labels.
 
 The ledger metric counts unique payment IDs accepted by the current process. If an
 event is replayed, the successfully recorded entry and its `recordedAt` value remain

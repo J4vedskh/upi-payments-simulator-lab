@@ -37,6 +37,7 @@ Every run should report:
 
 | Date | Improvement | Verification |
 | --- | --- | --- |
+| 2026-11-18 | Added bounded Prometheus counters for asynchronous Kafka send acknowledgement success and failure. | Focused acknowledgement metric, Kafka future, and Prometheus exposition tests: 4 passed; `mvn -o -T 1C clean test` passed: 63 tests; `mkdocs build --strict` passed |
 | 2026-11-16 | Added a pinned, self-hosted, read-only GitHub Pages API Explorer for the versioned OpenAPI contract. | Focused explorer source/hash contract test passed; `mvn -o -T 1C clean test` passed: 60 tests; `mkdocs build --strict` passed |
 | 2026-11-15 | Added bounded Prometheus counters for synchronous payment-event publisher invocation success and failure. | Focused metric, service, and Prometheus exposition tests: 13 passed; `mvn -o -T 1C clean test` passed: 59 tests; `mkdocs build --strict` passed |
 | 2026-11-13 | Made synchronous payment-event publication failure return a safe `503` before local payment, metric, or idempotency success is committed. | Focused service, controller, and parsed contract tests: 22 passed; `mvn -o -T 1C clean test` passed: 57 tests; `mkdocs build --strict` passed |
